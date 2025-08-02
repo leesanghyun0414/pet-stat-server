@@ -1,0 +1,27 @@
+services:
+  server:
+    init: true
+    build:
+      context: .
+      dockerfile: ./containers/pet-stats/Dockerfile
+  test-server:
+    tty: true
+    init: true
+    build:
+      context: .
+      dockerfile: ./containers/pet-stats/Dockerfile
+    command:
+      [
+        "cargo",
+        "test",
+        "-p",
+        "service",
+        "--",
+        "--include-ignored",
+        "--nocapture",
+      ]
+  psql:
+    init: true
+    build:
+      context: .
+      dockerfile: ./containers/db/Dockerfile

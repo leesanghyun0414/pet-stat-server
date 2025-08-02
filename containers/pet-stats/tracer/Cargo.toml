@@ -1,0 +1,11 @@
+[package]
+name = "tracer"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tracing-subscriber = "0.3.19"
+tracing = { workspace = true }
+config = { path = "../config" }
+anyhow = { workspace = true }
+thiserror = { workspace = true }

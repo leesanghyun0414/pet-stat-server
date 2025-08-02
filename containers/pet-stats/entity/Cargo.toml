@@ -1,0 +1,15 @@
+[package]
+name = "entity"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+seaography = { version = "1.1.4", features = [
+  "with-chrono",
+  "with-postgres-array",
+] }
+tracing = { workspace = true }
+sea-orm = { workspace = true }
+chrono = "0.4.39"
+async-graphql = "7.0.14"
+tokio = { workspace = true }

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LUMIÈRE - 自然派化粧品</title>
+    <link rel="stylesheet" href="cosmetics-style.css">
+</head>
+<body>
+    <!-- ポップアップメッセージ -->
+    <div id="popup" class="popup">
+        <div class="popup-content">
+            <span class="popup-icon">✓</span>
+            <p class="popup-message">カートに追加しました！</p>
+        </div>
+    </div>
+    <!-- ヘッダー -->
+    <header>
+        <nav class="navbar">
+            <div class="logo">LUMIÈRE</div>
+            <ul class="nav-menu">
+                <li><a href="#home">ホーム</a></li>
+                <li><a href="#products">製品</a></li>
+                <li><a href="#about">私たちについて</a></li>
+                <li><a href="#contact">お問い合わせ</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- ヒーローセクション -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>自然の恵みで、輝く美しさを</h1>
+            <p>オーガニック原料にこだわった、肌に優しいスキンケア</p>
+            <button class="cta-button">製品を見る</button>
+        </div>
+    </section>
+
+    <!-- 特徴セクション -->
+    <section class="features">
+        <h2>私たちのこだわり</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="icon">🌿</div>
+                <h3>100%オーガニック</h3>
+                <p>厳選された自然由来の成分のみを使用しています</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon">🐰</div>
+                <h3>動物実験なし</h3>
+                <p>全ての製品は動物実験を行わずに開発されています</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon">♻️</div>
+                <h3>環境に優しい</h3>
+                <p>リサイクル可能なパッケージを採用しています</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 人気商品セクション -->
+    <section class="products">
+        <h2>人気商品</h2>
+        <div class="products-grid">
+            <div class="product-card">
+                <div class="product-image"></div>
+                <h3>モイスチャーセラム</h3>
+                <p class="price">¥5,800</p>
+                <p class="description">潤いたっぷりの美容液で、しっとり肌へ</p>
+                <button class="add-to-cart">カートに追加</button>
+            </div>
+            <div class="product-card">
+                <div class="product-image"></div>
+                <h3>フェイシャルクリーム</h3>
+                <p class="price">¥4,200</p>
+                <p class="description">毎日のスキンケアに最適な保湿クリーム</p>
+                <button class="add-to-cart">カートに追加</button>
+            </div>
+            <div class="product-card">
+                <div class="product-image"></div>
+                <h3>クレンジングオイル</h3>
+                <p class="price">¥3,500</p>
+                <p class="description">メイクも汚れもすっきり落とす</p>
+                <button class="add-to-cart">カートに追加</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- お客様の声 -->
+    <section class="testimonials">
+        <h2>お客様の声</h2>
+        <div class="testimonial-container">
+            <div class="testimonial">
+                <p>"使い始めて3ヶ月、肌の調子が本当に良くなりました！"</p>
+                <p class="customer-name">- 田中 美咲様</p>
+            </div>
+            <div class="testimonial">
+                <p>"敏感肌の私でも安心して使える唯一の化粧品です。"</p>
+                <p class="customer-name">- 佐藤 綾子様</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- フッター -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>LUMIÈRE</h4>
+                <p>自然と調和する美しさを追求</p>
+            </div>
+            <div class="footer-section">
+                <h4>リンク</h4>
+                <ul>
+                    <li><a href="#">プライバシーポリシー</a></li>
+                    <li><a href="#">利用規約</a></li>
+                    <li><a href="#">配送について</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>フォローする</h4>
+                <div class="social-links">
+                    <a href="#">Instagram</a>
+                    <a href="#">Facebook</a>
+                    <a href="#">Twitter</a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2024 LUMIÈRE. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // カートに追加ボタンの機能
+        document.addEventListener('DOMContentLoaded', function() {
+            const addToCartButtons = document.querySelectorAll('.add-to-cart');
+            const popup = document.getElementById('popup');
+            
+            addToCartButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // 商品名を取得
+                    const productCard = this.closest('.product-card');
+                    const productName = productCard.querySelector('h3').textContent;
+                    
+                    // ポップアップメッセージを更新
+                    const popupMessage = popup.querySelector('.popup-message');
+                    popupMessage.textContent = `${productName}をカートに追加しました！`;
+                    
+                    // ポップアップを表示
+                    popup.classList.add('show');
+                    
+                    // 3秒後に自動的に非表示
+                    setTimeout(() => {
+                        popup.classList.remove('show');
+                    }, 3000);
+                });
+            });
+            
+            // ポップアップをクリックしたら閉じる
+            popup.addEventListener('click', function() {
+                this.classList.remove('show');
+            });
+        });
+    </script>
+</body>
+</html>

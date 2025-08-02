@@ -1,0 +1,113 @@
+services:
+  test-server:
+    tty: true
+    image: pet-stats-server:dev-test
+    container_name: pet_stats_server_test_container
+    build:
+      target: dev
+    volumes:
+      - cargo-registry:/usr/local/cargo/registry
+      - cargo-target:/usr/src/app/target
+    env_file:
+      - ./envs/dev/.env
+    command:
+      [
+        "cargo",
+        "test",
+        "-p",
+        "service",
+        "--",
+        "--include-ignored",
+        "--nocapture",
+      ]
+
+  server:
+    tty: true
+    image: pet-stats-server:dev
+    container_name: pet_stats_server_container
+    build:
+      target: dev
+    networks:
+      - db-bridge
+    depends_on:
+      - psql
+    volumes:
+      - cargo-registry:/usr/local/cargo/registry
+      - cargo-target:/usr/src/app/target
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./envs/dev/.env
+    develop:
+      watch:
+        - path: ./containers/pet-stats
+          target: /usr/src/app
+          action: sync+restart
+          ignore:
+            - ./containers/pet-stats/target/*
+            - ./containers/pet-stats/Cargo.lock
+            - ./containers/pet-stats/Dockerfile
+            - ./containers/pet-stats/README.md
+    restart: "on-failure"
+
+  server-generate-entity:
+    image: pet-stats-server-db-generator:dev
+    container_name: pet-stats-server-db-generator
+    build:
+      target: dev
+      dockerfile: ./containers/pet-stats/Dockerfile
+      context: .
+    networks:
+      - db-bridge
+    depends_on:
+      - psql
+    volumes:
+      - cargo-registry:/usr/local/cargo/registry
+      - cargo-target:/usr/src/app/target
+      - ./containers/pet-stats/entity/src:/usr/src/app/entity/src
+    env_file:
+      - ./envs/dev/.db.env
+    command:
+      [
+        "bash",
+        "-c",
+        "rustup  component add rustfmt && sea-orm-cli generate entity -u postgres://dev:dev@psql:5432/pet_stat -o entity/src/entities",
+      ]
+
+  server-psql-migration:
+    image: pet-stats-server-psql-migration:dev
+    container_name: pet-stats-server-db-migrator
+    build:
+      target: dev
+      dockerfile: ./containers/pet-stats/Dockerfile
+      context: .
+    networks:
+      - db-bridge
+    depends_on:
+      - psql
+    volumes:
+      - cargo-registry:/usr/local/cargo/registry
+      - cargo-target:/usr/src/app/target
+      - ./containers/pet-stats/entity/src:/usr/src/app/entity/src
+    env_file:
+      - ./envs/dev/.db.env
+    command: ["bash", "-c", "cargo run -p migration"]
+  psql:
+    image: psql:dev
+    container_name: psql_dev_container
+    build:
+      target: db
+    networks:
+      - db-bridge
+    env_file:
+      - ./envs/dev/.db.env
+    ports:
+      - "5432:5432"
+
+networks:
+  db-bridge:
+    driver: bridge
+
+volumes:
+  cargo-registry:
+  cargo-target:

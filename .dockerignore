@@ -1,0 +1,11 @@
+
+# Docker
+**/*/Dockerfile
+
+
+# IDE
+.idea/
+
+# Rust
+**/*/target/
+

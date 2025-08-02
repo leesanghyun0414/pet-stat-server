@@ -1,0 +1,47 @@
+[package]
+name = "app"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+envy = { workspace = true }
+config = { path = "./config" }
+tracer = { path = "./tracer" }
+tracing = { workspace = true }
+api = { path = "./api" }
+anyhow = { workspace = true }
+tokio = { workspace = true }
+migration = { path = "./migration" }
+
+[workspace]
+members = [
+  ".",
+  "./api",
+  "./entity",
+  "./migration",
+  "./service",
+  "./tracer",
+  "./config",
+  "./jwt",
+  "rest",
+]
+
+[workspace.dependencies]
+tracing = { version = "0.1.41" }
+envy = "0.4.2"
+sea-orm = { version = "1.1.14", features = [
+  "macros",
+  "runtime-tokio-native-tls",
+  "with-json",
+  "with-chrono",
+  "with-time",
+  "postgres-array",
+  "sqlx-postgres",
+
+] }
+tokio = { version = "1.43.0", features = ["full"] }
+anyhow = "1.0.95"
+thiserror = "2.0.11"
+chrono-tz = "0.10.1"
+mockall = "0.13.1"
+async-trait = "0.1.88"

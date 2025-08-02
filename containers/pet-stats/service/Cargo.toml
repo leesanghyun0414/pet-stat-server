@@ -1,0 +1,30 @@
+[package]
+name = "service"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+base64 = { version = "0.22", default-features = false }
+
+sea-orm = { workspace = true }
+tracing = { workspace = true }
+entity = { path = "../entity" }
+async-graphql = "7.0.14"
+serde = "1.0.218"
+jsonwebtoken = "9.3.1"
+jwt = { path = "../jwt" }
+chrono-tz = { workspace = true }
+chrono = "0.4.40"
+rest = { path = "../rest" }
+thiserror = { workspace = true }
+reqwest = "0.12.20"
+config = { path = "../config" }
+async-trait = { workspace = true }
+rand = "0.9.2"
+hmac = "0.12.1"
+sha2 = "0.10.9"
+[dev-dependencies]
+tokio = { version = "1.0", features = ["full"] }
+tokio-test = "0.4"
+mockall = { workspace = true }
+openssl = "0.10"

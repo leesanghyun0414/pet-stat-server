@@ -1,0 +1,27 @@
+[package]
+name = "api"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+sea-orm = { workspace = true }
+tracing = { workspace = true }
+tokio = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+
+
+migration = { path = "../migration" }
+entity = { path = "../entity" }
+config = { path = "../config" }
+service = { path = "../service" }
+async-graphql = "7.0.14"
+async-graphql-actix-web = "7.0.14"
+actix-web = "4"
+chrono = "0.4.39"
+serde_json = "1.0.139"
+chrono-tz = { workspace = true }
+jwt = { path = "../jwt" }
+env_logger = "0.11.7"
+futures = "0.3"
+futures-util = "0.3"
