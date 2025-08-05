@@ -14,7 +14,6 @@ use config::{
     app_config::{Flavor, APP_CONFIG},
     secret_config::SecretConfig,
 };
-use service::jwt::validate_jwt;
 use tracing::{error, instrument};
 
 use crate::gql::{mutations::Mutation, queries::Query};
@@ -39,27 +38,6 @@ async fn graphql_handler(
     secret_config: Data<SecretConfig>,
 ) -> GraphQLResponse {
     let request = gql_req.into_inner();
-    // if let Some(auth_header) = req
-    //     .headers()
-    //     .get("Authorization")
-    //     .and_then(|h| h.to_str().ok())
-    // {
-    //     if let Some(token) = auth_header.strip_prefix("Bearer ") {
-    //         match validate_jwt(token, &secret_config.jwt_secret) {
-    //             Ok(auth_context) => {
-    //                 request = request.data(auth_context);
-    //             }
-    //             Err(err) => {
-    //                 error!("{:?}", err);
-    //                 let error_response = async_graphql::Response::from_errors(vec![
-    //                     async_graphql::ServerError::new("Unauthorized", None),
-    //                 ]);
-    //
-    //                 return error_response.into();
-    //             }
-    //         }
-    //     }
-    // }
 
     schema.execute(request).await.into()
 }

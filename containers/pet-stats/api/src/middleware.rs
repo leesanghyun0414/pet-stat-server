@@ -37,7 +37,7 @@ pub(crate) async fn access_token_validator(
 }
 
 /// Logging request and response.
-#[instrument(skip(next), fields())]
+#[instrument(skip(next, req), fields())]
 pub(crate) async fn logging_transaction(
     req: ServiceRequest,
     next: Next<impl MessageBody>,
