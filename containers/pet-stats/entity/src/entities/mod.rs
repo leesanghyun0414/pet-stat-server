@@ -2,7 +2,11 @@
 
 pub mod prelude;
 
+pub mod feed_records;
 pub mod oauth_accounts;
+pub mod pets;
 pub mod sea_orm_active_enums;
 pub mod user_tokens;
 pub mod users;
+pub mod work_goals;
+pub mod work_records;

@@ -1,6 +1,6 @@
 use reqwest::{
     header::{HeaderName, HeaderValue},
-    Client, ClientBuilder, Response, Url,
+    Client, ClientBuilder, Response,
 };
 use std::{collections::HashMap, str::FromStr, time::Duration};
 use tracing::instrument;

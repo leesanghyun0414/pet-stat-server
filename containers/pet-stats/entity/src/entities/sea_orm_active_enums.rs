@@ -3,12 +3,58 @@
 use sea_orm::entity::prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum)]
+#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "date_duration_type")]
+pub enum DateDurationType {
+    #[sea_orm(string_value = "FullDate")]
+    FullDate,
+    #[sea_orm(string_value = "Month")]
+    Month,
+    #[sea_orm(string_value = "Year")]
+    Year,
+}
+#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum)]
+#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "feed_duration_type")]
+pub enum FeedDurationType {
+    #[sea_orm(string_value = "Day")]
+    Day,
+    #[sea_orm(string_value = "Week")]
+    Week,
+    #[sea_orm(string_value = "Month")]
+    Month,
+}
+#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum)]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "login_type")]
 pub enum LoginType {
     #[sea_orm(string_value = "Oauth")]
     Oauth,
     #[sea_orm(string_value = "Local")]
     Local,
+}
+#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum)]
+#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "pet_sex_type")]
+pub enum PetSexType {
+    #[sea_orm(string_value = "Male")]
+    Male,
+    #[sea_orm(string_value = "Female")]
+    Female,
+    #[sea_orm(string_value = "Other")]
+    Other,
+}
+#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum)]
+#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "pet_species_type")]
+pub enum PetSpeciesType {
+    #[sea_orm(string_value = "Dog")]
+    Dog,
+    #[sea_orm(string_value = "Cat")]
+    Cat,
+    #[sea_orm(string_value = "Fish")]
+    Fish,
+    #[sea_orm(string_value = "Lizard")]
+    Lizard,
+    #[sea_orm(string_value = "Turtle")]
+    Turtle,
+    #[sea_orm(string_value = "Snake")]
+    Snake,
 }
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum)]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "provider_type")]

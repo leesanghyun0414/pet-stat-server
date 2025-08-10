@@ -15,6 +15,7 @@ mod error;
 mod gql;
 mod middleware;
 mod routes;
+
 /// Actix Web web server main function.
 /// Launch the GraphQL server.
 ///
@@ -32,7 +33,6 @@ mod routes;
 ///         }
 /// Ok(())
 /// }
-///
 /// ```
 #[instrument]
 #[actix_web::main]
