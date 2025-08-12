@@ -65,6 +65,13 @@ impl MigrationTrait for Migration {
                     )
                     .col(current_timestamp_col(Users::CreatedAt))
                     .col(current_timestamp_col(Users::UpdatedAt))
+                    .check(
+                        Expr::col(Users::LoginType)
+                            .ne(LoginType::Local)
+                            .or(Expr::col(Users::Email)
+                                .is_not_null()
+                                .and(Expr::col(Users::PasswordHash).is_not_null())),
+                    )
                     .to_owned(),
             )
             .await?;

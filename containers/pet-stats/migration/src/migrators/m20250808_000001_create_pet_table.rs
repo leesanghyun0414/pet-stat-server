@@ -85,6 +85,29 @@ impl MigrationTrait for Migration {
             .await?;
 
         // Pets table.
+
+        let make_birth_range = r#"
+        CREATE OR REPLACE FUNCTION make_birth_range(
+
+        y int,
+        m int DEFAULT NULL,
+        d int DEFAULT NULL
+        ) RETURNS daterange
+        LANGUAGE sql IMMUTABLE AS $$
+        SELECT CASE
+        WHEN m IS NULL AND d IS NULL THEN
+            daterange(make_date(y,1,1), (make_date(y,1,1) + INTERVAL '1 year')::date, '[)')
+            WHEN d IS NULL THEN
+            daterange(make_date(y,m,1), (make_date(y,m,1) + INTERVAL '1 month')::date, '[)')
+    ELSE
+      daterange(make_date(y,m,d), (make_date(y,m,d) + INTERVAL '1 day')::date, '[)')
+  END;
+        $$;
+
+        "#;
+
+        db.execute_unprepared(make_birth_range).await?;
+
         manager
             .create_table(
                 Table::create()
@@ -109,11 +132,7 @@ impl MigrationTrait for Migration {
                             .custom(PetSpeciesType::name())
                             .not_null(),
                     )
-                    .col(
-                        ColumnDef::new(Pets::Birthday)
-                            .custom("daterange")
-                            .not_null(),
-                    )
+                    .col(ColumnDef::new(Pets::Birthday).date().not_null())
                     .col(
                         ColumnDef::new(Pets::BirthdayPrecision)
                             .custom(BirthdayPrecisionType::name())
@@ -143,6 +162,18 @@ impl MigrationTrait for Migration {
                             .on_delete(ForeignKeyAction::Cascade)
                             .on_update(ForeignKeyAction::Cascade),
                     )
+                    .check(Expr::cust(
+                        r#"
+CASE birthday_precision
+    WHEN 'Year' THEN
+        EXTRACT(MONTH FROM birthday) = 1 AND EXTRACT(DAY FROM birthday) = 1
+    WHEN 'Month' THEN
+        EXTRACT(DAY FROM birthday) = 1
+    WHEN 'FullDate' THEN
+        TRUE
+END
+                        "#,
+                    ))
                     .to_owned(),
             )
             .await?;
@@ -239,6 +270,9 @@ impl MigrationTrait for Migration {
                     .to_owned(),
             )
             .await?;
+
+        // TODO: Add constains function and db function for birthday precision.
+
         transaction.commit().await?;
 
         Ok(())
