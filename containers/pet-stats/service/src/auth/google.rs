@@ -52,15 +52,10 @@ impl OAuthProvider for GoogleOAuth {
     async fn verify_token(&self, token: &str) -> Result<Self::Claims, super::error::AuthError> {
         let header = decode_header(token).map_err(|_| AuthError::InvalidToken)?;
         let kid = header.kid.ok_or(AuthError::InvalidToken)?;
-        info!("Extracted kid: {:?}", kid);
 
         let jwk = self.fetch_public_key(&kid).await?;
-        error!("{:?}", jwk);
-        let decoding_key = DecodingKey::from_jwk(&jwk).map_err(|e| {
-            error!("??");
-
-            AuthError::NetworkError(e.to_string())
-        })?;
+        let decoding_key =
+            DecodingKey::from_jwk(&jwk).map_err(|e| AuthError::NetworkError(e.to_string()))?;
         info!("Decoding Key is good");
         let mut validation = Validation::new(header.alg);
         validation.set_audience(&[&self.client_id]);
@@ -72,7 +67,6 @@ impl OAuthProvider for GoogleOAuth {
                 error!("Token Error! {:?}", e.to_string());
                 AuthError::NetworkError(e.to_string())
             })?;
-        info!("{:?}", token_data);
         Ok(token_data.claims)
     }
 

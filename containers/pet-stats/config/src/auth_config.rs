@@ -15,5 +15,3 @@ impl Config for AuthConfig {
         load_config::<AuthConfig>()
     }
 }
-
-// TODO: Add lazy lock instance.

@@ -3,7 +3,6 @@ use tracing::info;
 
 #[get("/healthz")]
 async fn healthz() -> HttpResponse {
-    info!("Hello?");
     HttpResponse::Ok().body("Ok")
 }
 

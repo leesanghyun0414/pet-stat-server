@@ -63,7 +63,7 @@ impl UserMutation {
         }
         .insert(db)
         .await
-        .inspect(|m| info!("A refresh stored successfully {:?}", m.user_id))
+        .inspect(|m| info!("A refresh stored successfully {:?}", m.created_at))
         .inspect_err(|e| error!("Error store refresh token - {:?}", e))?;
 
         Ok(user_token)

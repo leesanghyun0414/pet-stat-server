@@ -3,7 +3,7 @@ use crate::gql::guards::AuthGuard;
 use crate::gql::objects::User;
 use async_graphql::{Context, Object, Result};
 use service::{jwt::Claims, queries::user::UserQuery as ServiceUserQuery};
-use tracing::{instrument, warn};
+use tracing::instrument;
 
 #[derive(Default)]
 pub struct UserQuery;
@@ -21,8 +21,6 @@ impl UserQuery {
 
     #[graphql(guard = "AuthGuard")]
     async fn get(&self, ctx: &Context<'_>, d: String) -> String {
-        let claims = ctx.data::<Claims>().unwrap();
-
         d.to_string()
     }
 

@@ -7,7 +7,7 @@ use actix_web::{
 };
 use config::{auth_config::AuthConfig, base_config::Config};
 use service::jwt::validate_jwt;
-use tracing::{debug, info, instrument, warn};
+use tracing::{debug, info, instrument};
 
 /// Validate access token from request If exist Authorization header.
 /// If not exist Authorization header is mean not guarded request (eg. Sign In)
@@ -25,7 +25,6 @@ pub(crate) async fn access_token_validator(
         .and_then(|h| h.to_str().ok())
         .and_then(|s| s.strip_prefix("Bearer "))
     {
-        warn!(header);
         match validate_jwt(header, &auth_config.jwt_sign_secret) {
             Ok(user) => {
                 req.extensions_mut().insert(user);

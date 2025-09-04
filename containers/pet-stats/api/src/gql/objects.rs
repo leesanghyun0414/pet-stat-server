@@ -1,6 +1,5 @@
 use async_graphql::{Enum, InputObject, SimpleObject};
-use chrono::{DateTime, FixedOffset};
-use entity::entities::{user_tokens, users};
+use entity::entities::users;
 
 #[derive(Debug, Enum, Copy, Clone, Eq, PartialEq)]
 #[graphql(remote = "entity::entities::sea_orm_active_enums::LoginType")]

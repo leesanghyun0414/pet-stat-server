@@ -3,7 +3,7 @@ use crate::gql::guards::AuthGuard;
 use crate::gql::objects::{OauthPayload, OauthSignInInput};
 use async_graphql::{Context, EmptyMutation, Error, Object, Result};
 use chrono::TimeDelta;
-use config::auth_config::{self, AuthConfig};
+use config::auth_config::AuthConfig;
 use entity::entities::sea_orm_active_enums::ProviderType;
 use jwt::{create_jwt, Claims};
 use sea_orm::DbErr;
