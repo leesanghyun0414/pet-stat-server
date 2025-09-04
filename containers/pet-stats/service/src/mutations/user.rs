@@ -5,9 +5,11 @@ use entity::entities::{oauth_accounts, users};
 use sea_orm::ActiveValue::Set;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, IntoActiveModel, QueryFilter,
-    QuerySelect, TransactionTrait,
+    QueryOrder, QuerySelect, TransactionTrait,
 };
-use tracing::{error, info, instrument};
+use tracing::{debug, error, info, instrument};
+
+use crate::utils::{commit_transaction, start_transaction};
 
 pub struct UserMutation;
 
@@ -19,7 +21,11 @@ impl UserMutation {
         provider_type: ProviderType,
         provider_user_id: String,
     ) -> Result<users::Model, DbErr> {
-        let txn = db.begin().await?;
+        info!(
+            "Starting OAuth user creation for provider: {:?}",
+            provider_type
+        );
+        let txn = start_transaction(db).await?;
         let new_user = users::ActiveModel {
             email: Set(email),
             login_type: Set(LoginType::Oauth),
@@ -36,8 +42,7 @@ impl UserMutation {
         }
         .insert(&txn)
         .await?;
-
-        txn.commit().await?;
+        commit_transaction(txn).await?;
 
         Ok(new_user)
     }
@@ -49,7 +54,7 @@ impl UserMutation {
         token_hash: &[u8; 32],
     ) -> Result<Model, DbErr> {
         let expires = (Local::now() + Duration::days(60)).with_timezone(Local::now().offset());
-
+        info!("Starting Store refresh token.");
         let user_token = user_tokens::ActiveModel {
             user_id: Set(user_id),
             refresh_token: Set(token_hash.to_vec()),
@@ -71,7 +76,7 @@ impl UserMutation {
         user_id: i32,
         new_hash: &[u8; 32],
     ) -> Result<Model, DbErr> {
-        let txn = db.begin().await?;
+        let txn = start_transaction(db).await?;
 
         let Some(user_token) = UserTokens::find()
             .filter(C::RefreshToken.eq(old_hash.as_slice()))
@@ -84,6 +89,7 @@ impl UserMutation {
         };
         let mut user_token_am = user_token.into_active_model();
         user_token_am.revoked = Set(Some(true));
+        user_token_am.updated_at = Set(Local::now().fixed_offset());
         user_token_am.update(&txn).await?;
 
         let expires = (Local::now() + Duration::days(60)).with_timezone(Local::now().offset());
@@ -97,7 +103,35 @@ impl UserMutation {
         .insert(&txn)
         .await?;
 
-        txn.commit().await?;
+        commit_transaction(txn).await?;
+
         Ok(new_user_token)
+    }
+
+    #[instrument(skip(db), fields())]
+    pub async fn disable_refresh_token(db: &DbConn, user_id: i32) -> Result<Model, DbErr> {
+        let txn = start_transaction(db).await?;
+
+        let mut user_token_am = match UserTokens::find()
+            .filter(C::UserId.eq(user_id))
+            .order_by_desc(C::CreatedAt)
+            .lock_exclusive()
+            .one(&txn)
+            .await?
+        {
+            Some(ut) => ut.into_active_model(),
+            None => {
+                txn.rollback().await?;
+                return Err(DbErr::RecordNotFound("Record Not Found".to_owned()));
+            }
+        };
+
+        user_token_am.revoked = Set(Some(true));
+        user_token_am.updated_at = Set(Local::now().fixed_offset());
+
+        let user_token = user_token_am.update(&txn).await?;
+
+        commit_transaction(txn).await?;
+        Ok(user_token)
     }
 }

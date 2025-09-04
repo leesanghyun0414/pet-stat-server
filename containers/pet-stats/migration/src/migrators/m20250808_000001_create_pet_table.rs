@@ -271,8 +271,6 @@ END
             )
             .await?;
 
-        // TODO: Add constains function and db function for birthday precision.
-
         transaction.commit().await?;
 
         Ok(())

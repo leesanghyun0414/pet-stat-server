@@ -9,7 +9,7 @@ pub struct UnixTimestamp(pub i64);
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
-    pub sub: String,
+    pub sub: i32,
     pub email: Option<String>,
     pub iat: UnixTimestamp,
     pub exp: UnixTimestamp,
@@ -53,7 +53,7 @@ pub fn verify_jwt(token: &str, secret: String) -> Result<Claims, JwtAuthError> {
 
 #[instrument(skip(email, secret))]
 pub fn create_jwt(
-    sub: String,
+    sub: i32,
     email: Option<String>,
     secret: String,
     exp: TimeDelta,
@@ -65,7 +65,7 @@ pub fn create_jwt(
     let exp = UnixTimestamp::from(now + exp);
 
     let claims = Claims {
-        sub: sub.to_owned(),
+        sub,
         email: email.map(|e| e.to_owned()),
         exp: exp.clone(),
         iat,
@@ -92,24 +92,22 @@ mod tests {
     use chrono::Duration;
     use chrono::Utc;
     use jsonwebtoken::encode;
+    use jsonwebtoken::errors::ErrorKind;
     use serde_json::json;
     use std::convert::TryInto;
+    use tracing_test::traced_test;
 
     const SECRET: &str = "secret_key";
 
     #[test]
+
     fn test_create_and_verify_jwt() {
-        let sub = "test_user";
+        let sub = 123123;
         let email = Some("test@example.com".to_string());
         let time_delta = TimeDelta::hours(1);
         // Create the token
-        let token = create_jwt(
-            sub.to_string(),
-            email.to_owned(),
-            SECRET.to_string(),
-            time_delta,
-        )
-        .expect("Token creation failed");
+        let token = create_jwt(sub, email.to_owned(), SECRET.to_string(), time_delta)
+            .expect("Token creation failed");
 
         // Verify the token and extract claims
         let claims = verify_jwt(&token, SECRET.to_string()).expect("Token verification failed");
@@ -134,12 +132,12 @@ mod tests {
     #[test]
     fn test_verify_jwt_with_wrong_secret() {
         let wrong_secret = "wrong_key";
-        let sub = "another_user";
+        let sub = 123123;
         let email = None;
         let time_delta = TimeDelta::hours(1);
         // Create the token with the correct secret
-        let token = create_jwt(sub.to_string(), email, SECRET.to_string(), time_delta)
-            .expect("Token creation failed");
+        let token =
+            create_jwt(sub, email, SECRET.to_string(), time_delta).expect("Token creation failed");
 
         // Verification should fail when using an incorrect secret
         let result = verify_jwt(&token, wrong_secret.to_string());
@@ -165,8 +163,10 @@ mod tests {
 
     // Boundary condition: test for expired token verification
     #[test]
+    #[traced_test]
     fn test_verify_expired_jwt() {
-        let sub = "expired_user";
+        info!("Testing Started!");
+        let sub = 123123;
         let email = Some("expired@example.com");
 
         let now = Utc::now();
@@ -174,7 +174,7 @@ mod tests {
         let expired_iat = UnixTimestamp::from(now - Duration::hours(2));
         let expired_exp = UnixTimestamp::from(now - Duration::hours(1));
         let claims = Claims {
-            sub: sub.to_string(),
+            sub,
             email: email.map(String::from),
             iat: expired_iat,
             exp: expired_exp,
@@ -189,10 +189,15 @@ mod tests {
         .expect("Token encoding failed");
 
         let result = verify_jwt(&token, SECRET.to_string());
-        assert!(
-            result.is_err(),
-            "Verification should fail for an expired token"
-        );
+        info!("{:?}", result);
+        let is_expired = result.is_err_and(|e| {
+            if let JwtAuthError::JWTError(jwt_err) = e {
+                matches!(jwt_err.kind(), ErrorKind::ExpiredSignature)
+            } else {
+                false
+            }
+        });
+        assert!(is_expired, "Verification should fail for an expired token");
     }
 
     // Test for invalid token format

@@ -11,15 +11,7 @@ services:
     env_file:
       - ./envs/dev/.env
     command:
-      [
-        "cargo",
-        "test",
-        "-p",
-        "service",
-        "--",
-        "--include-ignored",
-        "--nocapture",
-      ]
+      ["cargo", "test", "-p", "jwt", "--", "--include-ignored", "--nocapture"]
 
   server:
     tty: true

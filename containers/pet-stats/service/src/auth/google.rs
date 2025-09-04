@@ -67,7 +67,7 @@ impl OAuthProvider for GoogleOAuth {
         validation.set_issuer(GOOGLE_ISSUERS);
 
         let token_data = decode::<GoogleClaims>(token, &decoding_key, &validation)
-            .inspect(|x| info!("Inspect !!!!!!!!!{:?}", x.header.alg))
+            .inspect(|x| info!("Inspect !{:?}", x.header.alg))
             .map_err(|e| {
                 error!("Token Error! {:?}", e.to_string());
                 AuthError::NetworkError(e.to_string())

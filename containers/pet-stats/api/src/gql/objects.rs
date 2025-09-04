@@ -14,8 +14,6 @@ pub struct User {
     pub id: i32,
     pub email: Option<String>,
     pub login_type: LoginType,
-    // pub refresh_token: Option<Vec<u8>>,
-    // pub token_expires_at: Option<DateTime<FixedOffset>>,
 }
 
 impl From<users::Model> for User {
@@ -24,8 +22,6 @@ impl From<users::Model> for User {
             id: entity.id,
             email: entity.email,
             login_type: LoginType::from(entity.login_type),
-            // refresh_token: None,
-            // token_expires_at: None,
         }
     }
 }
@@ -38,14 +34,6 @@ pub enum ProviderType {
     Apple,
 }
 
-#[derive(InputObject)]
-pub struct OauthSignInInput {
-    pub email: Option<String>,
-    pub provider_user_id: String,
-    pub provider_type: ProviderType,
-    pub device_id: String,
-}
-
 #[derive(SimpleObject)]
 pub struct OauthPayload {
     pub access_token: String,
@@ -53,6 +41,7 @@ pub struct OauthPayload {
 }
 
 #[derive(InputObject)]
-pub struct Input {
+pub struct OauthSignInInput {
     pub id_token: String,
+    pub provider_type: ProviderType,
 }

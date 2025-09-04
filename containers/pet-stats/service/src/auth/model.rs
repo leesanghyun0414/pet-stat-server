@@ -10,4 +10,5 @@ pub struct OAuthUser {
 pub enum OAuthProvider {
     Google,
     Apple,
+    Meta,
 }

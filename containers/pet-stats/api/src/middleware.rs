@@ -1,7 +1,7 @@
 use actix_web::{
     body::MessageBody,
     dev::{ServiceRequest, ServiceResponse},
-    error::ErrorInternalServerError,
+    error::{ErrorInternalServerError, ErrorUnauthorized},
     middleware::Next,
     Error, HttpMessage,
 };
@@ -26,13 +26,16 @@ pub(crate) async fn access_token_validator(
         .and_then(|s| s.strip_prefix("Bearer "))
     {
         warn!(header);
-        if let Ok(user) = validate_jwt(header, &auth_config.jwt_sign_secret) {
-            req.extensions_mut().insert(user);
+        match validate_jwt(header, &auth_config.jwt_sign_secret) {
+            Ok(user) => {
+                req.extensions_mut().insert(user);
+            }
+            Err(e) => return Err(ErrorUnauthorized(e)),
         }
     }
 
     let res = next.call(req).await?;
-
+    info!("{:?}", res.response());
     Ok(res)
 }
 

@@ -1,10 +1,11 @@
 use crate::db::Database;
-use crate::gql::objects::{Input, OauthPayload};
-use async_graphql::{Context, Error, Object, Result};
+use crate::gql::guards::AuthGuard;
+use crate::gql::objects::{OauthPayload, OauthSignInInput};
+use async_graphql::{Context, EmptyMutation, Error, Object, Result};
 use chrono::TimeDelta;
 use config::auth_config::{self, AuthConfig};
 use entity::entities::sea_orm_active_enums::ProviderType;
-use jwt::create_jwt;
+use jwt::{create_jwt, Claims};
 use sea_orm::DbErr;
 use service::auth::oauth_provider::OAuthProvider;
 use service::auth::refresh_token::RefreshToken;
@@ -20,11 +21,13 @@ pub struct UserMutation;
 #[Object]
 impl UserMutation {
     #[instrument(skip(self, input, ctx))]
-    pub async fn sign(&self, ctx: &Context<'_>, input: Input) -> Result<OauthPayload> {
+    pub async fn sign(&self, ctx: &Context<'_>, input: OauthSignInInput) -> Result<OauthPayload> {
+        // TODO: Add Logging
         let auth_config = ctx.data::<AuthConfig>()?;
         let db = ctx.data::<Database>()?;
         let conn = db.get_connection();
 
+        // OPTIMIZE: Matching another provider oauth traits after subscript apple developer.
         let google_oauth =
             service::auth::google::GoogleOAuth::new(auth_config.google_oauth_client_id.to_owned())?;
         let claim = google_oauth.verify_token(&input.id_token).await?;
@@ -48,7 +51,7 @@ impl UserMutation {
         };
 
         let jwt_token = create_jwt(
-            user.id.to_string(),
+            user.id,
             user.email.to_owned(),
             auth_config.jwt_sign_secret.to_owned(),
             TimeDelta::minutes(30),
@@ -66,14 +69,15 @@ impl UserMutation {
         })
     }
 
+    /// Disable last refresh token.
+    #[graphql(guard = "AuthGuard")]
     #[instrument(skip(self, ctx))]
-    pub async fn sign_out(&self, ctx: &Context<'_>) -> Result<String> {
-        let auth_config = ctx.data::<AuthConfig>()?;
-
+    pub async fn sign_out(&self, ctx: &Context<'_>) -> Result<EmptyMutation> {
+        let user_id = ctx.data::<Claims>()?.sub;
         let db = ctx.data::<Database>()?;
         let conn = db.get_connection();
+        ServiceUserMutation::disable_refresh_token(conn, user_id).await?;
 
-        // TODO: Impl
-        todo!()
+        Ok(EmptyMutation)
     }
 }

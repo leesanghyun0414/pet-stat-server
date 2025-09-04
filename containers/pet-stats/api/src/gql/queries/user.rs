@@ -19,9 +19,10 @@ impl UserQuery {
         Ok(User::from(user))
     }
 
-    // #[graphql(guard = "AuthGuard")]
+    #[graphql(guard = "AuthGuard")]
     async fn get(&self, ctx: &Context<'_>, d: String) -> String {
         let claims = ctx.data::<Claims>().unwrap();
+
         d.to_string()
     }
 
