@@ -47,7 +47,7 @@ impl UserMutation {
         Ok(new_user)
     }
 
-    #[instrument(skip(db), fields())]
+    #[instrument(skip(db, token_hash), fields())]
     pub async fn store_refresh_token(
         db: &DbConn,
         user_id: i32,

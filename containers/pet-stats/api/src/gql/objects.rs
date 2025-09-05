@@ -25,7 +25,7 @@ impl From<users::Model> for User {
     }
 }
 
-#[derive(Enum, Copy, Clone, Eq, PartialEq)]
+#[derive(Enum, Copy, Clone, Eq, PartialEq, Debug)]
 #[graphql(remote = "entity::entities::sea_orm_active_enums::ProviderType")]
 pub enum ProviderType {
     Google,
@@ -39,7 +39,7 @@ pub struct OauthPayload {
     pub refresh_token: String,
 }
 
-#[derive(InputObject)]
+#[derive(InputObject, Debug)]
 pub struct OauthSignInInput {
     pub id_token: String,
     pub provider_type: ProviderType,

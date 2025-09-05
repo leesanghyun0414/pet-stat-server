@@ -22,7 +22,11 @@ pub struct UserMutation;
 impl UserMutation {
     #[instrument(skip(self, input, ctx))]
     pub async fn sign(&self, ctx: &Context<'_>, input: OauthSignInInput) -> Result<OauthPayload> {
-        // TODO: Add Logging
+        info!(
+            "Starting OAuth sign-in process for provider: {:?}",
+            input.provider_type
+        );
+
         let auth_config = ctx.data::<AuthConfig>()?;
         let db = ctx.data::<Database>()?;
         let conn = db.get_connection();
@@ -30,7 +34,13 @@ impl UserMutation {
         // OPTIMIZE: Matching another provider oauth traits after subscript apple developer.
         let google_oauth =
             service::auth::google::GoogleOAuth::new(auth_config.google_oauth_client_id.to_owned())?;
+
+        info!("Verifying OAuth token");
         let claim = google_oauth.verify_token(&input.id_token).await?;
+        info!(
+            "OAuth token verified successfully for user_id: {:?}",
+            claim.sub
+        );
 
         let user = match ServiceUserQuery::user_by_provider_user_id(conn, claim.sub.clone()).await {
             Ok(user) => user,
@@ -50,19 +60,31 @@ impl UserMutation {
             }
         };
 
+        info!("Generating JWT for user_id: {:?}", user.id);
         let jwt_token = create_jwt(
             user.id,
             user.email.to_owned(),
             auth_config.jwt_sign_secret.to_owned(),
             TimeDelta::minutes(30),
         )?;
+        info!("JWT generated successfully for user_id: {:?}", user.id);
 
+        info!("Generating refresh token for user_id: {}", user.id);
         let token = RefreshToken::generate()?;
+        info!(
+            "Refresh token generated and stored for user_id: {}",
+            user.id
+        );
         let token_hash = token.hash(auth_config.refresh_key_hashing_secret.as_bytes());
 
+        info!("Storing refresh token for user_id: {}", user.id);
         ServiceUserMutation::store_refresh_token(conn, user.id, &token_hash).await?;
+        info!("Refresh token stored successfully for user_id: {}", user.id);
 
-        debug!("{}, {}", jwt_token, token.0);
+        info!(
+            "OAuth sign-in completed successfully for user_id: {}",
+            user.id
+        );
         Ok(OauthPayload {
             access_token: jwt_token,
             refresh_token: token.0,
