@@ -39,6 +39,10 @@ pub(crate) async fn access_token_validator(
 }
 
 /// Logging request and response.
+///
+/// # Errors
+///
+///  Actix web error when calling next request.
 #[instrument(skip(next, req), fields())]
 pub(crate) async fn logging_transaction(
     req: ServiceRequest,
