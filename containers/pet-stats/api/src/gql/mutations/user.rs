@@ -95,11 +95,19 @@ impl UserMutation {
     #[graphql(guard = "AuthGuard")]
     #[instrument(skip(self, ctx))]
     pub async fn sign_out(&self, ctx: &Context<'_>) -> Result<EmptyMutation> {
+        info!("Starting Sign-Out process.");
+
+        info!("Getting user claims from data.");
         let user_id = ctx.data::<Claims>()?.sub;
+        info!("User claims successfully getting user_id: {:?}.", user_id);
         let db = ctx.data::<Database>()?;
         let conn = db.get_connection();
-        ServiceUserMutation::disable_refresh_token(conn, user_id).await?;
 
+        info!("Disable user refresh token.");
+        ServiceUserMutation::disable_refresh_token(conn, user_id).await?;
+        info!("Disable user refresh token has successfully ended.");
+
+        info!("Sign-Out process ended successfully.");
         Ok(EmptyMutation)
     }
 }
