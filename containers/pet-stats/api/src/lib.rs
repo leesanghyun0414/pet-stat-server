@@ -1,5 +1,7 @@
 use actix_web::middleware::from_fn;
 use actix_web::{web, App, HttpServer};
+use config::auth_config::AuthConfig;
+use config::base_config::Config;
 use config::secret_config::SecretConfig;
 use error::ApiError;
 use gql::schema::{create_schema, AppSchema};
@@ -10,6 +12,7 @@ use tokio::signal::unix::{signal, SignalKind};
 use tracing::instrument;
 use tracing::{error, info};
 
+mod context_data;
 mod db;
 mod error;
 mod gql;
@@ -40,9 +43,11 @@ pub async fn main() -> Result<(), ApiError> {
     env_logger::init();
     let schema: AppSchema = create_schema().await?;
     let secret_config = SecretConfig::new()?;
+    let auth_config = AuthConfig::new()?;
     let server = HttpServer::new(move || {
         App::new()
             .configure(routes::configure_routes)
+            .app_data(web::Data::new(auth_config.clone()))
             .app_data(web::Data::new(secret_config.clone()))
             .app_data(web::Data::new(schema.clone()))
             .wrap(from_fn(access_token_validator))

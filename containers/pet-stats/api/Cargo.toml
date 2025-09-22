@@ -9,7 +9,7 @@ tracing = { workspace = true }
 tokio = { workspace = true }
 thiserror = { workspace = true }
 anyhow = { workspace = true }
-
+async-trait = "0.1.89"
 
 migration = { path = "../migration" }
 entity = { path = "../entity" }
