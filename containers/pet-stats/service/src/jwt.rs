@@ -2,6 +2,7 @@
 
 use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
+use tracing::{error, info};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
@@ -10,13 +11,20 @@ pub struct Claims {
 }
 
 pub fn validate_jwt(token: &str, secret: &str) -> Result<Claims, jsonwebtoken::errors::Error> {
+    info!("Validate JWT started.");
     let validation = Validation::new(Algorithm::HS256);
-    let token_data = decode::<Claims>(
+    match decode::<Claims>(
         token,
         &DecodingKey::from_secret(secret.as_ref()),
         &validation,
-    )?;
-    Ok(token_data.claims)
+    ) {
+        Ok(token_data) => Ok(token_data.claims),
+
+        Err(err) => {
+            error!("{:?}", err);
+            Err(err)
+        }
+    }
 }
 
 pub fn generate_jwt(

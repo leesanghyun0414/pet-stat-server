@@ -2,7 +2,7 @@ use chrono::{DateTime, TimeDelta, Utc};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
-use tracing::{info, instrument};
+use tracing::{error, info, instrument};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct UnixTimestamp(pub i64);
@@ -34,6 +34,12 @@ impl TryFrom<UnixTimestamp> for DateTime<Utc> {
 pub enum JwtAuthError {
     #[error("JWT failed: {0}")]
     JWTError(#[from] jsonwebtoken::errors::Error),
+
+    #[error("JWT expired")]
+    Expired,
+    #[error("Invalid JWT")]
+    Invalid,
+
     #[error("Timestamp conversion failed for value: {0}")]
     TimestampConversionError(i64),
 }
@@ -42,13 +48,23 @@ pub enum JwtAuthError {
 pub fn verify_jwt(token: &str, secret: String) -> Result<Claims, JwtAuthError> {
     info!("Verificating JWT.");
     let validation = Validation::default();
-    let token_data = decode::<Claims>(
+    match decode::<Claims>(
         token,
         &DecodingKey::from_secret(secret.as_bytes()),
         &validation,
-    )?;
-    info!("Verificating ended successfully.");
-    Ok(token_data.claims)
+    ) {
+        Ok(token_data) => Ok(token_data.claims),
+        Err(err) => {
+            error!("{:?}", err);
+            match err.kind() {
+                jsonwebtoken::errors::ErrorKind::ExpiredSignature => Err(JwtAuthError::Expired),
+                jsonwebtoken::errors::ErrorKind::InvalidToken => Err(JwtAuthError::Invalid),
+                _ => Err(JwtAuthError::JWTError(err)),
+            }
+        }
+    }
+    // info!("Verificating ended successfully.");
+    // Ok(token_data.claims)
 }
 
 #[instrument(skip(email, secret))]

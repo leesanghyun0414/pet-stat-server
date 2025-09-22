@@ -1,7 +1,7 @@
 use crate::db::Database;
 use crate::gql::guards::AuthGuard;
-use crate::gql::objects::{OauthPayload, OauthSignInInput};
-use async_graphql::{Context, EmptyMutation, Error, Object, Result};
+use crate::gql::objects::{OauthPayload, OauthSignInInput, SignOutPayload};
+use async_graphql::{Context, EmptyMutation, Error, ErrorExtensions, Object, Result};
 use chrono::TimeDelta;
 use config::auth_config::AuthConfig;
 use entity::entities::sea_orm_active_enums::ProviderType;
@@ -94,7 +94,11 @@ impl UserMutation {
     /// Disable last refresh token.
     #[graphql(guard = "AuthGuard")]
     #[instrument(skip(self, ctx))]
-    pub async fn sign_out(&self, ctx: &Context<'_>) -> Result<EmptyMutation> {
+    pub async fn sign_out(
+        &self,
+        ctx: &Context<'_>,
+        refresh_token: String,
+    ) -> Result<SignOutPayload> {
         info!("Starting Sign-Out process.");
 
         info!("Getting user claims from data.");
@@ -104,10 +108,26 @@ impl UserMutation {
         let conn = db.get_connection();
 
         info!("Disable user refresh token.");
-        ServiceUserMutation::disable_refresh_token(conn, user_id).await?;
+        let auth_config = ctx.data::<AuthConfig>()?;
+        let refresh_token_hash =
+            RefreshToken(refresh_token).hash(auth_config.refresh_key_hashing_secret.as_bytes());
+
+        ServiceUserMutation::revoke_refresh_token(conn, &refresh_token_hash, user_id)
+            .await
+            .map_err(|err| {
+                error!("Failed to revoke refresh token: {:?}", err);
+
+                Error::new("Failed to sign out")
+                    .extend_with(|_e, ext| ext.set("code", "SIGN_OUT_FAILED"))
+            })?;
+
         info!("Disable user refresh token has successfully ended.");
 
         info!("Sign-Out process ended successfully.");
-        Ok(EmptyMutation)
+
+        Ok(SignOutPayload {
+            success: true,
+            message: "successfully signed out.".to_string(),
+        })
     }
 }

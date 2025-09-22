@@ -4,8 +4,8 @@ use entity::entities::user_tokens::{self, Column as C, Entity as UserTokens, Mod
 use entity::entities::{oauth_accounts, users};
 use sea_orm::ActiveValue::Set;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DatabaseTransaction, DbConn, DbErr, EntityTrait,
-    IntoActiveModel, QueryFilter, QueryOrder, QuerySelect, TransactionTrait,
+    ActiveModelTrait, ColumnTrait, ConnectionTrait, DatabaseTransaction, DbConn, DbErr,
+    EntityTrait, IntoActiveModel, QueryFilter, QueryOrder, QuerySelect, TransactionTrait,
 };
 use tracing::{debug, error, info, instrument};
 
@@ -69,6 +69,33 @@ impl UserMutation {
         Ok(user_token)
     }
 
+    #[instrument(skip(txn), fields())]
+    pub async fn revoke_refresh_token<T>(
+        txn: &T,
+        hash: &[u8; 32],
+        user_id: i32,
+    ) -> Result<user_tokens::Model, DbErr>
+    where
+        T: ConnectionTrait,
+    {
+        let Some(user_token) = UserTokens::find()
+            .filter(C::RefreshToken.eq(hash.as_slice()))
+            .filter(C::UserId.eq(user_id))
+            .lock_exclusive()
+            .one(txn)
+            .await?
+        else {
+            return Err(DbErr::RecordNotFound("Not found".to_string()));
+        };
+
+        let mut am = user_token.into_active_model();
+        am.revoked = Set(Some(true));
+        am.updated_at = Set(Local::now().fixed_offset());
+        let updated = am.update(txn).await?;
+
+        Ok(updated)
+    }
+
     #[instrument(skip(db), fields())]
     pub async fn rotate_refresh_token(
         db: &DbConn,
@@ -78,20 +105,8 @@ impl UserMutation {
     ) -> Result<Model, DbErr> {
         let txn = start_transaction(db).await?;
 
-        let Some(user_token) = UserTokens::find()
-            .filter(C::RefreshToken.eq(old_hash.as_slice()))
-            .lock_exclusive()
-            .one(&txn)
-            .await?
-        else {
-            txn.rollback().await?;
-            return Err(DbErr::RecordNotFound("Record Not Found".to_owned()));
-        };
-        let mut user_token_am = user_token.into_active_model();
-        user_token_am.revoked = Set(Some(true));
-        user_token_am.updated_at = Set(Local::now().fixed_offset());
-        user_token_am.update(&txn).await?;
-
+        let old_token = Self::revoke_refresh_token(&txn, old_hash, user_id).await?;
+        info!("Old token revoked status: {:?}", old_token.revoked);
         let expires = (Local::now() + Duration::days(60)).with_timezone(Local::now().offset());
 
         let new_user_token = user_tokens::ActiveModel {
@@ -106,37 +121,5 @@ impl UserMutation {
         commit_transaction(txn).await?;
 
         Ok(new_user_token)
-    }
-
-    #[instrument(skip(db), fields())]
-    async fn revoke_refresh_token(txn: &DatabaseTransaction, hash: &[u8; 32]) -> Result<(), DbErr> {
-        let Some(user_token) = UserTokens::find().filter();
-    }
-
-    #[instrument(skip(db), fields())]
-    pub async fn disable_refresh_token(db: &DbConn, user_id: i32) -> Result<Model, DbErr> {
-        let txn = start_transaction(db).await?;
-
-        let mut user_token_am = match UserTokens::find()
-            .filter(C::UserId.eq(user_id))
-            .order_by_desc(C::CreatedAt)
-            .lock_exclusive()
-            .one(&txn)
-            .await?
-        {
-            Some(ut) => ut.into_active_model(),
-            None => {
-                txn.rollback().await?;
-                return Err(DbErr::RecordNotFound("Record Not Found".to_owned()));
-            }
-        };
-
-        user_token_am.revoked = Set(Some(true));
-        user_token_am.updated_at = Set(Local::now().fixed_offset());
-
-        let user_token = user_token_am.update(&txn).await?;
-
-        commit_transaction(txn).await?;
-        Ok(user_token)
     }
 }

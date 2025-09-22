@@ -42,7 +42,6 @@ pub async fn create_schema() -> Result<AppSchema, ApiError> {
     info!("Starting Database migration");
 
     info!("Successfully completed database migraEmptyMutationtion");
-
     let schema = Schema::build(Query::default(), Mutation::default(), EmptySubscription)
         .data(db)
         .data(dump_data)

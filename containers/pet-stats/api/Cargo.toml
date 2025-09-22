@@ -15,6 +15,7 @@ migration = { path = "../migration" }
 entity = { path = "../entity" }
 config = { path = "../config" }
 service = { path = "../service" }
+
 async-graphql = "7.0.14"
 async-graphql-actix-web = "7.0.14"
 actix-web = "4"

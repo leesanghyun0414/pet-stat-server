@@ -44,3 +44,9 @@ pub struct OauthSignInInput {
     pub id_token: String,
     pub provider_type: ProviderType,
 }
+
+#[derive(SimpleObject, Debug)]
+pub struct SignOutPayload {
+    pub success: bool,
+    pub message: String,
+}
