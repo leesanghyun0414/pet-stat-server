@@ -9,7 +9,9 @@ use async_graphql::ErrorExtensions;
 use config::{auth_config::AuthConfig, base_config::Config};
 use jwt::{verify_jwt, JwtAuthError};
 use serde_json::json;
-use tracing::{debug, error, info, instrument};
+use tracing::{debug, error, info, instrument, warn};
+
+use crate::context_data::AccessToken;
 
 fn extract_bearer_token(req: &ServiceRequest) -> Option<String> {
     req.headers()
@@ -35,33 +37,32 @@ pub(crate) async fn access_token_validator(
         .and_then(|h| h.to_str().ok())
         .and_then(|s| s.strip_prefix("Bearer "))
     {
-        match verify_jwt(header, auth_config.jwt_sign_secret) {
-            Ok(user) => {
-                info!("@@@@@@@@@@@@@@@@@@@@@@@@@");
-                req.extensions_mut().insert(user);
-            }
-            Err(JwtAuthError::Expired) => {
-                error!("EXPIRED!!!!");
-                let resp = HttpResponse::Unauthorized()
-                    .content_type("application/json")
-                    .json(json!({
-                        "errors": [
-                            { "message": "Expired token", "code": "TOKEN_EXPIRED" }
-                        ]
-                    }));
-
-                return Err(InternalError::from_response("Expired token", resp).into());
-                // return Err(resp.into());
-            }
-
-            Err(_) => {
-                return Err(ErrorUnauthorized("Invalid Token"));
-            }
-        }
+        warn!("HHHHHHHHHHHHHHHA! {:?}", header);
+        req.extensions_mut().insert(AccessToken(header.to_string()));
+        // match verify_jwt(header, auth_config.jwt_sign_secret) {
+        //     Ok(user) => {
+        //         req.extensions_mut().insert(user);
+        //     }
+        //     Err(JwtAuthError::Expired) => {
+        //         error!("EXPIRED!!!!");
+        //         let resp = HttpResponse::Unauthorized()
+        //             .content_type("application/json")
+        //             .json(json!({
+        //                 "errors": [
+        //                     { "message": "Expired token", "code": "TOKEN_EXPIRED" }
+        //                 ]
+        //             }));
+        //
+        //         return Err(InternalError::from_response("Expired token", resp).into());
+        //     }
+        //
+        //     Err(_) => {
+        //         return Err(ErrorUnauthorized("Invalid Token"));
+        //     }
+        // }
     }
 
     let res = next.call(req).await?;
-    info!("{:?}", res.response());
     Ok(res)
 }
 

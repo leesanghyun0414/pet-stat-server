@@ -73,14 +73,12 @@ impl UserMutation {
     pub async fn revoke_refresh_token<T>(
         txn: &T,
         hash: &[u8; 32],
-        user_id: i32,
     ) -> Result<user_tokens::Model, DbErr>
     where
         T: ConnectionTrait,
     {
         let Some(user_token) = UserTokens::find()
             .filter(C::RefreshToken.eq(hash.as_slice()))
-            .filter(C::UserId.eq(user_id))
             .lock_exclusive()
             .one(txn)
             .await?
@@ -100,12 +98,12 @@ impl UserMutation {
     pub async fn rotate_refresh_token(
         db: &DbConn,
         old_hash: &[u8; 32],
-        user_id: i32,
         new_hash: &[u8; 32],
     ) -> Result<Model, DbErr> {
         let txn = start_transaction(db).await?;
 
-        let old_token = Self::revoke_refresh_token(&txn, old_hash, user_id).await?;
+        let old_token = Self::revoke_refresh_token(&txn, old_hash).await?;
+        let user_id = old_token.user_id;
         info!("Old token revoked status: {:?}", old_token.revoked);
         let expires = (Local::now() + Duration::days(60)).with_timezone(Local::now().offset());
 

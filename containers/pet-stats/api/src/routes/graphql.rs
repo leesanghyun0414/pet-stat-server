@@ -3,20 +3,25 @@ use actix_web::{
     http::header::ContentType,
     post,
     web::{self, Data},
-    HttpRequest, HttpResponse, Result,
+    HttpMessage, HttpRequest, HttpResponse, Result,
 };
 use async_graphql::{
     http::{playground_source, GraphQLPlaygroundConfig},
-    EmptySubscription, Schema,
+    EmptySubscription, Error, Schema,
 };
 use async_graphql_actix_web::{GraphQLRequest, GraphQLResponse};
 use config::{
     app_config::{Flavor, APP_CONFIG},
+    auth_config::AuthConfig,
     secret_config::SecretConfig,
 };
-use tracing::{error, instrument};
+use jwt::{verify_jwt, Claims};
+use tracing::{error, info, instrument};
 
-use crate::gql::{mutations::Mutation, queries::Query};
+use crate::{
+    context_data::AccessToken,
+    gql::{mutations::Mutation, queries::Query},
+};
 
 #[instrument]
 #[get("/graphql-pg")]
@@ -37,7 +42,11 @@ async fn graphql_handler(
     req: HttpRequest,
     secret_config: Data<SecretConfig>,
 ) -> GraphQLResponse {
-    let request = gql_req.into_inner();
+    let mut request = gql_req.into_inner();
+    if let Some(tok) = req.extensions().get::<AccessToken>().cloned() {
+        info!("TOOOOOOOOOOOKKKKK");
+        request = request.data(tok)
+    };
 
     schema.execute(request).await.into()
 }

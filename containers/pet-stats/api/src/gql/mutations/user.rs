@@ -1,3 +1,4 @@
+use crate::context_data::AccessToken;
 use crate::db::Database;
 use crate::gql::guards::AuthGuard;
 use crate::gql::objects::{OauthPayload, OauthSignInInput, SignOutPayload};
@@ -5,7 +6,7 @@ use async_graphql::{Context, EmptyMutation, Error, ErrorExtensions, Object, Resu
 use chrono::TimeDelta;
 use config::auth_config::AuthConfig;
 use entity::entities::sea_orm_active_enums::ProviderType;
-use jwt::{create_jwt, Claims};
+use jwt::{create_jwt, verify_jwt, Claims, JwtAuthError};
 use sea_orm::DbErr;
 use service::auth::oauth_provider::OAuthProvider;
 use service::auth::refresh_token::RefreshToken;
@@ -13,7 +14,7 @@ use service::{
     mutations::user::UserMutation as ServiceUserMutation,
     queries::user::UserQuery as ServiceUserQuery,
 };
-use tracing::{debug, error, info, instrument};
+use tracing::{debug, error, info, instrument, warn};
 
 #[derive(Default)]
 pub struct UserMutation;
@@ -102,17 +103,28 @@ impl UserMutation {
         info!("Starting Sign-Out process.");
 
         info!("Getting user claims from data.");
-        let user_id = ctx.data::<Claims>()?.sub;
-        info!("User claims successfully getting user_id: {:?}.", user_id);
+        let auth_config = ctx.data::<AuthConfig>()?;
+        let token = ctx.data::<AccessToken>()?;
+        match verify_jwt(token.0.as_str(), auth_config.jwt_sign_secret.clone()) {
+            Ok(_claims) => {
+                info!("Access token verified on Sign Out workflow.");
+            }
+            Err(JwtAuthError::Expired) => {
+                warn!("Token expired: {:?}", token.0);
+            }
+            Err(e) => {
+                return Err(e.into());
+            }
+        };
+
         let db = ctx.data::<Database>()?;
         let conn = db.get_connection();
 
         info!("Disable user refresh token.");
-        let auth_config = ctx.data::<AuthConfig>()?;
         let refresh_token_hash =
             RefreshToken(refresh_token).hash(auth_config.refresh_key_hashing_secret.as_bytes());
 
-        ServiceUserMutation::revoke_refresh_token(conn, &refresh_token_hash, user_id)
+        ServiceUserMutation::revoke_refresh_token(conn, &refresh_token_hash)
             .await
             .map_err(|err| {
                 error!("Failed to revoke refresh token: {:?}", err);
