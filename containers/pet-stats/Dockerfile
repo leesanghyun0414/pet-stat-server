@@ -17,7 +17,7 @@ RUN apt-get update \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
-RUN cargo install sea-orm-cli@1.1.0 seaography-cli
+RUN cargo install sea-orm-cli seaography-cli
 
 FROM base AS dep-build
 

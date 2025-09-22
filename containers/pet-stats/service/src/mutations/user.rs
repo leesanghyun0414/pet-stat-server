@@ -4,8 +4,8 @@ use entity::entities::user_tokens::{self, Column as C, Entity as UserTokens, Mod
 use entity::entities::{oauth_accounts, users};
 use sea_orm::ActiveValue::Set;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DbConn, DbErr, EntityTrait, IntoActiveModel, QueryFilter,
-    QueryOrder, QuerySelect, TransactionTrait,
+    ActiveModelTrait, ColumnTrait, DatabaseTransaction, DbConn, DbErr, EntityTrait,
+    IntoActiveModel, QueryFilter, QueryOrder, QuerySelect, TransactionTrait,
 };
 use tracing::{debug, error, info, instrument};
 
@@ -106,6 +106,11 @@ impl UserMutation {
         commit_transaction(txn).await?;
 
         Ok(new_user_token)
+    }
+
+    #[instrument(skip(db), fields())]
+    async fn revoke_refresh_token(txn: &DatabaseTransaction, hash: &[u8; 32]) -> Result<(), DbErr> {
+        let Some(user_token) = UserTokens::find().filter();
     }
 
     #[instrument(skip(db), fields())]
