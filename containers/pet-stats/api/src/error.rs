@@ -4,6 +4,7 @@ use config::error::ConfigError;
 use sea_orm::DbErr;
 use service::auth::error::AuthError;
 use thiserror::Error;
+
 #[derive(Debug, Error)]
 pub enum ApiError {
     #[error("Failed to create schema: {0}")]

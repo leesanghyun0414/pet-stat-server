@@ -14,20 +14,12 @@ pub enum SchemaError {
     #[error("Database operation failed: {0}")]
     Database(#[from] sea_orm::DbErr),
 }
-
-pub struct DumpData {
-    pub name: String,
-}
-
 pub type AppSchema = Schema<Query, Mutation, EmptySubscription>;
 
 #[instrument]
 pub async fn create_schema() -> Result<AppSchema, ApiError> {
     info!("Starting schema creation process");
 
-    let dump_data = DumpData {
-        name: "Test".to_owned(),
-    };
     let oauth_config = config::auth_config::AuthConfig::new()?;
 
     info!("Initializing database connection");
@@ -44,7 +36,6 @@ pub async fn create_schema() -> Result<AppSchema, ApiError> {
     info!("Successfully completed database migraEmptyMutationtion");
     let schema = Schema::build(Query::default(), Mutation::default(), EmptySubscription)
         .data(db)
-        .data(dump_data)
         .data(oauth_config)
         .finish();
 

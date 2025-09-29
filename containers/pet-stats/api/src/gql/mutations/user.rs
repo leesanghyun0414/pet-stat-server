@@ -1,12 +1,15 @@
+use core::hash;
+
 use crate::context_data::AccessToken;
 use crate::db::Database;
 use crate::gql::guards::AuthGuard;
-use crate::gql::objects::{OauthPayload, OauthSignInInput, SignOutPayload};
-use async_graphql::{Context, EmptyMutation, Error, ErrorExtensions, Object, Result};
+use crate::gql::objects::{OauthPayload, OauthSignInInput, SignOutPayload, TokenRotationPayload};
+use crate::gql::utils::db_err_to_gql;
+use async_graphql::{Context, Error, ErrorExtensions, Object, Result};
 use chrono::TimeDelta;
 use config::auth_config::AuthConfig;
 use entity::entities::sea_orm_active_enums::ProviderType;
-use jwt::{create_jwt, verify_jwt, Claims, JwtAuthError};
+use jwt::{create_jwt, verify_jwt, JwtAuthError};
 use sea_orm::DbErr;
 use service::auth::oauth_provider::OAuthProvider;
 use service::auth::refresh_token::RefreshToken;
@@ -66,7 +69,8 @@ impl UserMutation {
             user.id,
             user.email.to_owned(),
             auth_config.jwt_sign_secret.to_owned(),
-            TimeDelta::minutes(30),
+            TimeDelta::seconds(5),
+            // TimeDelta::minutes(30),
         )?;
         info!("JWT generated successfully for user_id: {:?}", user.id);
 
@@ -94,7 +98,7 @@ impl UserMutation {
 
     /// Disable last refresh token.
     #[graphql(guard = "AuthGuard")]
-    #[instrument(skip(self, ctx))]
+    #[instrument(skip(self, ctx, refresh_token))]
     pub async fn sign_out(
         &self,
         ctx: &Context<'_>,
@@ -110,7 +114,7 @@ impl UserMutation {
                 info!("Access token verified on Sign Out workflow.");
             }
             Err(JwtAuthError::Expired) => {
-                warn!("Token expired: {:?}", token.0);
+                warn!("Token expired: {:?}; treating as success", token.0);
             }
             Err(e) => {
                 return Err(e.into());
@@ -124,14 +128,24 @@ impl UserMutation {
         let refresh_token_hash =
             RefreshToken(refresh_token).hash(auth_config.refresh_key_hashing_secret.as_bytes());
 
-        ServiceUserMutation::revoke_refresh_token(conn, &refresh_token_hash)
-            .await
-            .map_err(|err| {
-                error!("Failed to revoke refresh token: {:?}", err);
+        match ServiceUserMutation::revoke_refresh_token(conn, &refresh_token_hash).await {
+            Ok(_) => {
+                info!("Refresh token revoked successfully.");
+            }
 
-                Error::new("Failed to sign out")
-                    .extend_with(|_e, ext| ext.set("code", "SIGN_OUT_FAILED"))
-            })?;
+            Err(DbErr::RecordNotFound(_)) => {
+                warn!("Refresh token not found; treating as success");
+            }
+
+            Err(DbErr::Custom(msg)) if msg == "TOKEN_EXPIRED" => {
+                warn!("Refresh token already expired; treating as success.");
+            }
+
+            Err(e) => {
+                error!("Faild to revoke refresh token: {:?}", e);
+                db_err_to_gql(e);
+            }
+        }
 
         info!("Disable user refresh token has successfully ended.");
 
@@ -140,6 +154,59 @@ impl UserMutation {
         Ok(SignOutPayload {
             success: true,
             message: "successfully signed out.".to_string(),
+        })
+    }
+
+    /// Generate new Access token and Refresh token.
+    /// This mutations called when access token expired.
+    ///
+    /// 1. Verifying refresh token. If expired or not found token, response invalid token error
+    ///    without detail error.
+    /// 2. Revoking old refresh token.
+    /// 3. Generate new access token and refresh token.
+    /// 4. Storing hashed refresh token to datastore.
+    /// 5. Return non-hashed refresh token and access token.
+    #[instrument(skip(self, ctx))]
+    pub async fn rotate_token(
+        &self,
+        ctx: &Context<'_>,
+        refresh_token: String,
+    ) -> Result<TokenRotationPayload> {
+        info!("Starting rotating tokens");
+        let db = ctx.data::<Database>()?;
+
+        let auth_config = ctx.data::<AuthConfig>()?;
+        let conn = db.get_connection();
+        let old_refresh_token_hash =
+            RefreshToken(refresh_token).hash(auth_config.refresh_key_hashing_secret.as_bytes());
+
+        let new_refresh_token = RefreshToken::generate()?;
+
+        let new_refresh_token_hash =
+            new_refresh_token.hash(auth_config.refresh_key_hashing_secret.as_bytes());
+
+        let user_token = ServiceUserMutation::rotate_refresh_token(
+            conn,
+            &old_refresh_token_hash,
+            &new_refresh_token_hash,
+        )
+        .await
+        .map_err(|e| {
+            error!("DB Error: {:?}", e);
+            db_err_to_gql(e)
+        })?;
+
+        let user = ServiceUserQuery::user_by_id(conn, user_token.user_id).await?;
+
+        let access_token = create_jwt(
+            user_token.user_id,
+            user.email,
+            auth_config.jwt_sign_secret.to_owned(),
+            TimeDelta::minutes(30),
+        )?;
+        Ok(TokenRotationPayload {
+            access_token,
+            refresh_token: new_refresh_token.0,
         })
     }
 }

@@ -7,7 +7,7 @@ use sea_orm::{
     ActiveModelTrait, ColumnTrait, ConnectionTrait, DatabaseTransaction, DbConn, DbErr,
     EntityTrait, IntoActiveModel, QueryFilter, QueryOrder, QuerySelect, TransactionTrait,
 };
-use tracing::{debug, error, info, instrument};
+use tracing::{debug, error, info, instrument, warn};
 
 use crate::utils::{commit_transaction, start_transaction};
 
@@ -53,7 +53,8 @@ impl UserMutation {
         user_id: i32,
         token_hash: &[u8; 32],
     ) -> Result<Model, DbErr> {
-        let expires = (Local::now() + Duration::days(60)).with_timezone(Local::now().offset());
+        // let expires = (Local::now() + Duration::days(60)).with_timezone(Local::now().offset());
+        let expires = (Local::now() + Duration::seconds(2)).with_timezone(Local::now().offset());
         info!("Starting Store refresh token.");
         let user_token = user_tokens::ActiveModel {
             user_id: Set(user_id),
@@ -86,6 +87,13 @@ impl UserMutation {
             return Err(DbErr::RecordNotFound("Not found".to_string()));
         };
 
+        let now = Local::now().fixed_offset();
+        info!("Expired : {:?} Now: {:?}", user_token.expires_at, now);
+        if user_token.expires_at <= now {
+            warn!("Old user refresh token has expired");
+            return Err(DbErr::Custom("TOKEN_EXPIRED".to_owned()));
+        }
+
         let mut am = user_token.into_active_model();
         am.revoked = Set(Some(true));
         am.updated_at = Set(Local::now().fixed_offset());
@@ -94,6 +102,28 @@ impl UserMutation {
         Ok(updated)
     }
 
+    /// Rotate refresh token when access token has been expired.
+    /// 1. Revoking old hash token
+    /// 2. Create new user token.
+    /// 3. Commit and exit transaction.
+    ///
+    /// # Arguments
+    ///
+    /// * `db` - DB Connection
+    /// * `old_hash` - hashed token by secret key in server from user request.
+    /// * `new_hash` - hashed token by secret key in server.
+    ///
+    /// # Errors
+    ///
+    /// - Not found user token by old hash.
+    /// - DB connection error.
+    /// - Syntax Error in the queries.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let new_token = rotate_refresh_token(&conn, old_hash, new_hash).await?;
+    /// ```
     #[instrument(skip(db), fields())]
     pub async fn rotate_refresh_token(
         db: &DbConn,
@@ -103,21 +133,29 @@ impl UserMutation {
         let txn = start_transaction(db).await?;
 
         let old_token = Self::revoke_refresh_token(&txn, old_hash).await?;
+
         let user_id = old_token.user_id;
         info!("Old token revoked status: {:?}", old_token.revoked);
-        let expires = (Local::now() + Duration::days(60)).with_timezone(Local::now().offset());
+        // let expires = (Local::now() + Duration::days(60)).with_timezone(Local::now().offset());
+        let expires = (Local::now() + Duration::seconds(10)).with_timezone(Local::now().offset());
 
-        let new_user_token = user_tokens::ActiveModel {
+        let user_token = user_tokens::ActiveModel {
             user_id: Set(user_id),
             refresh_token: Set(new_hash.to_vec()),
             expires_at: Set(expires),
             ..Default::default()
         }
         .insert(&txn)
-        .await?;
+        .await
+        .inspect(|t| {
+            info!(
+                "New user token created user_id: {:?} timestamp: {:?}",
+                t.user_id, t.created_at
+            )
+        })?;
 
         commit_transaction(txn).await?;
 
-        Ok(new_user_token)
+        Ok(user_token)
     }
 }

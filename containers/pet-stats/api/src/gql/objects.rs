@@ -50,3 +50,9 @@ pub struct SignOutPayload {
     pub success: bool,
     pub message: String,
 }
+
+#[derive(SimpleObject)]
+pub struct TokenRotationPayload {
+    pub access_token: String,
+    pub refresh_token: String,
+}
