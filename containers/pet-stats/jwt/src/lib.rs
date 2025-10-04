@@ -4,6 +4,8 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use tracing::{error, info, instrument};
 
+pub const DEFAULT_EXP: TimeDelta = TimeDelta::seconds(1);
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct UnixTimestamp(pub i64);
 
@@ -63,8 +65,6 @@ pub fn verify_jwt(token: &str, secret: String) -> Result<Claims, JwtAuthError> {
             }
         }
     }
-    // info!("Verificating ended successfully.");
-    // Ok(token_data.claims)
 }
 
 #[instrument(skip(email, secret))]
@@ -79,7 +79,7 @@ pub fn create_jwt(
     let now = Utc::now();
     let iat = UnixTimestamp::from(now);
     let exp = UnixTimestamp::from(now + exp);
-
+    info!("EXP : {:?}", exp);
     let claims = Claims {
         sub,
         email: email.map(|e| e.to_owned()),

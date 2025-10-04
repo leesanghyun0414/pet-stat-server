@@ -54,7 +54,7 @@ impl UserMutation {
         token_hash: &[u8; 32],
     ) -> Result<Model, DbErr> {
         // let expires = (Local::now() + Duration::days(60)).with_timezone(Local::now().offset());
-        let expires = (Local::now() + Duration::seconds(2)).with_timezone(Local::now().offset());
+        let expires = (Local::now() + Duration::days(2)).with_timezone(Local::now().offset());
         info!("Starting Store refresh token.");
         let user_token = user_tokens::ActiveModel {
             user_id: Set(user_id),

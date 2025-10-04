@@ -9,7 +9,7 @@ use async_graphql::{Context, Error, ErrorExtensions, Object, Result};
 use chrono::TimeDelta;
 use config::auth_config::AuthConfig;
 use entity::entities::sea_orm_active_enums::ProviderType;
-use jwt::{create_jwt, verify_jwt, JwtAuthError};
+use jwt::{create_jwt, verify_jwt, JwtAuthError, DEFAULT_EXP};
 use sea_orm::DbErr;
 use service::auth::oauth_provider::OAuthProvider;
 use service::auth::refresh_token::RefreshToken;
@@ -69,7 +69,7 @@ impl UserMutation {
             user.id,
             user.email.to_owned(),
             auth_config.jwt_sign_secret.to_owned(),
-            TimeDelta::seconds(5),
+            DEFAULT_EXP,
             // TimeDelta::minutes(30),
         )?;
         info!("JWT generated successfully for user_id: {:?}", user.id);
@@ -202,7 +202,7 @@ impl UserMutation {
             user_token.user_id,
             user.email,
             auth_config.jwt_sign_secret.to_owned(),
-            TimeDelta::minutes(30),
+            DEFAULT_EXP,
         )?;
         Ok(TokenRotationPayload {
             access_token,

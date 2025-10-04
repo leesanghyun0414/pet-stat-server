@@ -12,10 +12,8 @@ use async_graphql::{
 use async_graphql_actix_web::{GraphQLRequest, GraphQLResponse};
 use config::{
     app_config::{Flavor, APP_CONFIG},
-    auth_config::AuthConfig,
     secret_config::SecretConfig,
 };
-use jwt::{verify_jwt, Claims};
 use tracing::{error, info, instrument};
 
 use crate::{
@@ -44,7 +42,6 @@ async fn graphql_handler(
 ) -> GraphQLResponse {
     let mut request = gql_req.into_inner();
     if let Some(tok) = req.extensions().get::<AccessToken>().cloned() {
-        info!("TOOOOOOOOOOOKKKKK");
         request = request.data(tok)
     };
 
