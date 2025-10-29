@@ -3,6 +3,7 @@ use async_graphql::Guard;
 use crate::context_data::AccessToken;
 
 pub(crate) struct AuthGuard;
+pub(crate) struct AuthUserGuard;
 
 impl Guard for AuthGuard {
     async fn check(&self, ctx: &async_graphql::Context<'_>) -> async_graphql::Result<()> {

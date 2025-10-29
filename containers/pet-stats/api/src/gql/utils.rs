@@ -20,7 +20,7 @@ pub fn db_err_to_gql(err: DbErr) -> Error {
     }
 }
 
-pub fn claims_from_ctx(ctx: &Context<'_>) -> Result<Claims, Error> {
+pub fn verified_claims_from_ctx(ctx: &Context<'_>) -> Result<Claims, Error> {
     let auth_config = ctx.data::<AuthConfig>()?;
     let token = ctx.data::<AccessToken>()?;
 

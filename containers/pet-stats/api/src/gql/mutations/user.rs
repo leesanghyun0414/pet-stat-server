@@ -1,12 +1,9 @@
-use core::hash;
-
 use crate::context_data::AccessToken;
 use crate::db::Database;
 use crate::gql::guards::AuthGuard;
 use crate::gql::objects::{OauthPayload, OauthSignInInput, SignOutPayload, TokenRotationPayload};
 use crate::gql::utils::db_err_to_gql;
-use async_graphql::{Context, Error, ErrorExtensions, Object, Result};
-use chrono::TimeDelta;
+use async_graphql::{Context, Error, Object, Result};
 use config::auth_config::AuthConfig;
 use entity::entities::sea_orm_active_enums::ProviderType;
 use jwt::{create_jwt, verify_jwt, JwtAuthError, DEFAULT_EXP};

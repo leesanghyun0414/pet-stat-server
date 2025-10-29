@@ -1,11 +1,9 @@
 use crate::gql::guards::AuthGuard;
 use crate::gql::objects::User;
-use crate::gql::utils::claims_from_ctx;
+use crate::gql::utils::verified_claims_from_ctx;
 use crate::{context_data::AccessToken, db::Database};
 use async_graphql::{Context, Object, Result};
-use config::auth_config::AuthConfig;
-use jwt::verify_jwt;
-use service::auth;
+
 use service::{jwt::Claims, queries::user::UserQuery as ServiceUserQuery};
 use tracing::instrument;
 
@@ -34,7 +32,7 @@ impl UserQuery {
         let db = ctx.data::<Database>()?;
         let conn = db.get_connection();
 
-        let claims = claims_from_ctx(ctx)?;
+        let claims = verified_claims_from_ctx(ctx)?;
 
         let id = claims.sub;
         let user = ServiceUserQuery::user_by_id(conn, id).await?;

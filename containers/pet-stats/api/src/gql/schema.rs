@@ -1,9 +1,9 @@
-use async_graphql::{EmptySubscription, Schema};
+use async_graphql::{extensions::ExtensionFactory, EmptySubscription, Schema};
 use config::base_config::Config;
 use sea_orm::DbErr;
 use tracing::{error, info, instrument};
 
-use crate::{db::Database, error::ApiError};
+use crate::{db::Database, error::ApiError, gql::middleware::AuthExtension};
 
 use super::{mutations::Mutation, queries::Query};
 
@@ -37,6 +37,7 @@ pub async fn create_schema() -> Result<AppSchema, ApiError> {
     let schema = Schema::build(Query::default(), Mutation::default(), EmptySubscription)
         .data(db)
         .data(oauth_config)
+        .extension(AuthExtension)
         .finish();
 
     info!("Schema creation completed successfully");

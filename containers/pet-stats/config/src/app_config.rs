@@ -17,6 +17,7 @@ pub enum Flavor {
 #[derive(Debug, Deserialize)]
 pub struct AppConfig {
     pub flavor: Flavor,
+    pub skip_middleware_operations: Vec<String>,
 }
 
 pub static APP_CONFIG: LazyLock<AppConfig> = LazyLock::new(|| {

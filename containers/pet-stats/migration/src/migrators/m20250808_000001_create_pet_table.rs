@@ -138,11 +138,14 @@ impl MigrationTrait for Migration {
                             .custom(BirthdayPrecisionType::name())
                             .not_null(),
                     )
-                    .col(ColumnDef::new(Pets::FeedCount).integer().not_null())
+                    .col(
+                        ColumnDef::new(Pets::FeedCount)
+                            .integer()
+                            .default(Expr::value(2)),
+                    )
                     .col(
                         ColumnDef::new(Pets::FeedCountPer)
                             .custom(FeedDurationType::name())
-                            .not_null()
                             .default(Expr::value(FeedDurationType::Day)),
                     )
                     .col(ColumnDef::new(Pets::Weight).float().null())

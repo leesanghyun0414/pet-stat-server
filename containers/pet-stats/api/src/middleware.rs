@@ -3,6 +3,7 @@ use actix_web::{
     dev::{ServiceRequest, ServiceResponse},
     error::{ErrorInternalServerError, ErrorUnauthorized, InternalError},
     middleware::Next,
+    web::Path,
     Error, HttpMessage, HttpResponse,
 };
 use async_graphql::ErrorExtensions;

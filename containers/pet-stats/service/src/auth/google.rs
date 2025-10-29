@@ -57,6 +57,7 @@ impl OAuthProvider for GoogleOAuth {
         let decoding_key =
             DecodingKey::from_jwk(&jwk).map_err(|e| AuthError::NetworkError(e.to_string()))?;
         info!("Decoding Key is good");
+
         let mut validation = Validation::new(header.alg);
         validation.set_audience(&[&self.client_id]);
         validation.set_issuer(GOOGLE_ISSUERS);
