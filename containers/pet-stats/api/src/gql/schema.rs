@@ -1,4 +1,4 @@
-use async_graphql::{extensions::ExtensionFactory, EmptySubscription, Schema};
+use async_graphql::{EmptySubscription, Schema};
 use config::base_config::Config;
 use sea_orm::DbErr;
 use tracing::{error, info, instrument};

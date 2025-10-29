@@ -7,14 +7,14 @@ use actix_web::{
 };
 use async_graphql::{
     http::{playground_source, GraphQLPlaygroundConfig},
-    EmptySubscription, Error, Schema,
+    EmptySubscription, Schema,
 };
 use async_graphql_actix_web::{GraphQLRequest, GraphQLResponse};
 use config::{
     app_config::{Flavor, APP_CONFIG},
     secret_config::SecretConfig,
 };
-use tracing::{error, info, instrument};
+use tracing::instrument;
 
 use crate::{
     context_data::AccessToken,

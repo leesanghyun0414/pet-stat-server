@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use async_graphql::{
-    extensions::{Extension, ExtensionContext, ExtensionFactory, NextPrepareRequest, NextRequest},
-    Request, Response, ServerResult,
+    extensions::{Extension, ExtensionContext, ExtensionFactory, NextPrepareRequest},
+    Request, ServerResult,
 };
 use async_trait::async_trait;
 use config::app_config::APP_CONFIG;

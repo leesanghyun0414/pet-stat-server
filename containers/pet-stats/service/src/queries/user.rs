@@ -3,7 +3,7 @@ use ::entity::entities::{
 };
 use entity::entities::oauth_accounts;
 use sea_orm::{
-    sea_query::token, ColumnTrait, DbConn, DbErr, EntityTrait, Iterable, JoinType, QueryFilter,
+    ColumnTrait, DbConn, DbErr, EntityTrait, Iterable, JoinType, QueryFilter,
     QuerySelect, RelationTrait,
 };
 use tracing::instrument;

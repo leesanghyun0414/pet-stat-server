@@ -1,10 +1,10 @@
 use crate::gql::guards::AuthGuard;
 use crate::gql::objects::User;
 use crate::gql::utils::verified_claims_from_ctx;
-use crate::{context_data::AccessToken, db::Database};
+use crate::db::Database;
 use async_graphql::{Context, Object, Result};
 
-use service::{jwt::Claims, queries::user::UserQuery as ServiceUserQuery};
+use service::queries::user::UserQuery as ServiceUserQuery;
 use tracing::instrument;
 
 #[derive(Default)]

@@ -1,5 +1,4 @@
 use actix_web::{get, web, HttpResponse};
-use tracing::info;
 
 #[get("/healthz")]
 async fn healthz() -> HttpResponse {

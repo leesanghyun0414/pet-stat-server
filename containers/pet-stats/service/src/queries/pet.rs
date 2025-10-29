@@ -1,6 +1,6 @@
-use entity::entities::{pets, pets::Model as Pet, users};
+use entity::entities::{pets, pets::Model as Pet};
 use sea_orm::{ColumnTrait, DbConn, DbErr, EntityTrait, QueryFilter};
-use tracing::{error, info, instrument, trace};
+use tracing::{error, info, instrument};
 
 pub struct PetQuery;
 

@@ -4,10 +4,10 @@ use entity::entities::user_tokens::{self, Column as C, Entity as UserTokens, Mod
 use entity::entities::{oauth_accounts, users};
 use sea_orm::ActiveValue::Set;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, ConnectionTrait, DatabaseTransaction, DbConn, DbErr,
-    EntityTrait, IntoActiveModel, QueryFilter, QueryOrder, QuerySelect, TransactionTrait,
+    ActiveModelTrait, ColumnTrait, ConnectionTrait, DbConn, DbErr,
+    EntityTrait, IntoActiveModel, QueryFilter, QuerySelect,
 };
-use tracing::{debug, error, info, instrument, warn};
+use tracing::{error, info, instrument, warn};
 
 use crate::utils::{commit_transaction, start_transaction};
 

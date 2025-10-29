@@ -1,16 +1,12 @@
 use actix_web::{
     body::MessageBody,
     dev::{ServiceRequest, ServiceResponse},
-    error::{ErrorInternalServerError, ErrorUnauthorized, InternalError},
+    error::ErrorInternalServerError,
     middleware::Next,
-    web::Path,
-    Error, HttpMessage, HttpResponse,
+    Error, HttpMessage,
 };
-use async_graphql::ErrorExtensions;
 use config::{auth_config::AuthConfig, base_config::Config};
-use jwt::{verify_jwt, JwtAuthError};
-use serde_json::json;
-use tracing::{debug, error, info, instrument, warn};
+use tracing::{debug, instrument};
 
 use crate::context_data::AccessToken;
 

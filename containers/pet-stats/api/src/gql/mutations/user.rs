@@ -14,7 +14,7 @@ use service::{
     mutations::user::UserMutation as ServiceUserMutation,
     queries::user::UserQuery as ServiceUserQuery,
 };
-use tracing::{debug, error, info, instrument, warn};
+use tracing::{error, info, instrument, warn};
 
 #[derive(Default)]
 pub struct UserMutation;
