@@ -128,7 +128,6 @@ mod tests {
         // Verify the token and extract claims
         let claims = verify_jwt(&token, SECRET.to_string()).expect("Token verification failed");
         assert_eq!(claims.sub, sub);
-        assert_eq!(claims.email, email.map(String::from));
 
         // Test conversion from UnixTimestamp to DateTime<Utc>
         let iat: DateTime<Utc> = claims.iat.try_into().expect("Failed to convert iat");

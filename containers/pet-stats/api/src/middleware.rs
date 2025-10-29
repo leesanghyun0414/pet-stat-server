@@ -1,11 +1,9 @@
 use actix_web::{
     body::MessageBody,
     dev::{ServiceRequest, ServiceResponse},
-    error::ErrorInternalServerError,
     middleware::Next,
     Error, HttpMessage,
 };
-use config::{auth_config::AuthConfig, base_config::Config};
 use tracing::{debug, instrument};
 
 use crate::context_data::AccessToken;
@@ -25,13 +23,7 @@ pub(crate) async fn access_token_validator(
     req: ServiceRequest,
     next: Next<impl MessageBody>,
 ) -> Result<ServiceResponse<impl MessageBody>, Error> {
-    let auth_config = AuthConfig::new().map_err(|_| ErrorInternalServerError("Internal Error"))?;
-    if let Some(header) = req
-        .headers()
-        .get("Authorization")
-        .and_then(|h| h.to_str().ok())
-        .and_then(|s| s.strip_prefix("Bearer "))
-    {
+    if let Some(header) = extract_bearer_token(&req) {
         req.extensions_mut().insert(AccessToken(header.to_string()));
     }
 

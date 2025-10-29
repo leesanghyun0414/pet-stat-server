@@ -7,13 +7,6 @@ use crate::{db::Database, error::ApiError, gql::middleware::AuthExtension};
 
 use super::{mutations::Mutation, queries::Query};
 
-use thiserror::Error;
-
-#[derive(Debug, Error)]
-pub enum SchemaError {
-    #[error("Database operation failed: {0}")]
-    Database(#[from] sea_orm::DbErr),
-}
 pub type AppSchema = Schema<Query, Mutation, EmptySubscription>;
 
 #[instrument]
