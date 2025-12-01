@@ -1,3 +1,4 @@
+use chrono::{DateTime, FixedOffset, Local};
 use sea_orm::{DbConn, DbErr, TransactionTrait};
 use tracing::{error, trace};
 
@@ -25,4 +26,8 @@ pub async fn commit_transaction(txn: sea_orm::DatabaseTransaction) -> Result<(),
             Err(e)
         }
     }
+}
+
+pub(crate) fn get_current_time() -> DateTime<FixedOffset> {
+    Local::now().with_timezone(Local::now().offset())
 }

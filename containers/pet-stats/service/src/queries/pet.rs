@@ -1,5 +1,5 @@
 use entity::entities::{pets, pets::Model as Pet};
-use sea_orm::{ColumnTrait, DbConn, DbErr, EntityTrait, QueryFilter};
+use sea_orm::{ColumnTrait, DbConn, DbErr, EntityTrait, PaginatorTrait, QueryFilter};
 use tracing::{error, info, instrument};
 
 pub struct PetQuery;
@@ -12,6 +12,16 @@ impl PetQuery {
             .all(db)
             .await
             .inspect(|ps| info!("Found user: {:?} pets count: {:?}", user_id, ps.len()))
+            .inspect_err(|e| error!("Error occur: {:?}", e))
+    }
+
+    #[instrument(skip(db))]
+    pub async fn count_pets_by_user_id(db: &DbConn, user_id: i32) -> Result<u64, DbErr> {
+        pets::Entity::find()
+            .filter(pets::Column::UserId.eq(user_id))
+            .count(db)
+            .await
+            .inspect(|n| info!("Found user: {:?} pets count: {:?}", user_id, n))
             .inspect_err(|e| error!("Error occur: {:?}", e))
     }
 

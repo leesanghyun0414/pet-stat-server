@@ -67,7 +67,6 @@ impl UserMutation {
             user.email.to_owned(),
             auth_config.jwt_sign_secret.to_owned(),
             DEFAULT_EXP,
-            // TimeDelta::minutes(30),
         )?;
         info!("JWT generated successfully for user_id: {:?}", user.id);
 
@@ -125,6 +124,9 @@ impl UserMutation {
         let refresh_token_hash =
             RefreshToken(refresh_token).hash(auth_config.refresh_key_hashing_secret.as_bytes());
 
+        // Revoke but throw error that known db error.
+        // When sign out is not important token expired, and record search because revoked token
+        // record wouldn't using anymore.
         match ServiceUserMutation::revoke_refresh_token(conn, &refresh_token_hash).await {
             Ok(_) => {
                 info!("Refresh token revoked successfully.");

@@ -4,12 +4,12 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use tracing::{error, info, instrument};
 
-pub const DEFAULT_EXP: TimeDelta = TimeDelta::seconds(1);
+pub const DEFAULT_EXP: TimeDelta = TimeDelta::minutes(30);
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct UnixTimestamp(pub i64);
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
     pub sub: i32,
     pub email: Option<String>,
@@ -205,13 +205,7 @@ mod tests {
 
         let result = verify_jwt(&token, SECRET.to_string());
         info!("{:?}", result);
-        let is_expired = result.is_err_and(|e| {
-            if let JwtAuthError::JWTError(jwt_err) = e {
-                matches!(jwt_err.kind(), ErrorKind::ExpiredSignature)
-            } else {
-                false
-            }
-        });
+        let is_expired = result.is_err_and(|e| matches!(e, JwtAuthError::Expired));
         assert!(is_expired, "Verification should fail for an expired token");
     }
 

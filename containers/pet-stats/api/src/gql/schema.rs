@@ -30,7 +30,6 @@ pub async fn create_schema() -> Result<AppSchema, ApiError> {
     let schema = Schema::build(Query::default(), Mutation::default(), EmptySubscription)
         .data(db)
         .data(oauth_config)
-        .extension(AuthExtension)
         .finish();
 
     info!("Schema creation completed successfully");

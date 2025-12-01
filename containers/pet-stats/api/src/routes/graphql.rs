@@ -2,7 +2,7 @@ use actix_web::{
     get,
     http::header::ContentType,
     post,
-    web::{self, Data},
+    web::{self},
     HttpMessage, HttpRequest, HttpResponse, Result,
 };
 use async_graphql::{
@@ -10,10 +10,7 @@ use async_graphql::{
     EmptySubscription, Schema,
 };
 use async_graphql_actix_web::{GraphQLRequest, GraphQLResponse};
-use config::{
-    app_config::{Flavor, APP_CONFIG},
-    secret_config::SecretConfig,
-};
+use config::app_config::{Flavor, APP_CONFIG};
 use tracing::instrument;
 
 use crate::{
@@ -32,13 +29,12 @@ async fn playground() -> Result<HttpResponse> {
         .body(source))
 }
 
-#[instrument(skip(schema, gql_req, secret_config))]
+#[instrument(skip(schema, gql_req,))]
 #[post("/graphql")]
 async fn graphql_handler(
     schema: web::Data<Schema<Query, Mutation, EmptySubscription>>,
     gql_req: GraphQLRequest,
     req: HttpRequest,
-    secret_config: Data<SecretConfig>,
 ) -> GraphQLResponse {
     let mut request = gql_req.into_inner();
     if let Some(tok) = req.extensions().get::<AccessToken>().cloned() {

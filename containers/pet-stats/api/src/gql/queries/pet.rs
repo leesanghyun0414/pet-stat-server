@@ -35,4 +35,17 @@ impl PetQuery {
 
         Ok(Pet::from(pet))
     }
+
+    #[graphql(guard = "AuthGuard")]
+    #[instrument(skip(self, ctx))]
+    async fn count_pets(&self, ctx: &Context<'_>) -> Result<u64> {
+        let db = ctx.data::<Database>()?;
+        let conn = db.get_connection();
+
+        let claims = verified_claims_from_ctx(ctx)?;
+
+        let pet_count = ServicePetQuery::count_pets_by_user_id(conn, claims.sub).await?;
+
+        Ok(pet_count)
+    }
 }

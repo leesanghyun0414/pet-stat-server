@@ -1,7 +1,10 @@
 use async_graphql::{Enum, InputObject, SimpleObject};
 use chrono::NaiveDate;
 use entity::entities::{pets, users};
-use sea_orm::{prelude::DateTimeWithTimeZone, ActiveValue::Set};
+use sea_orm::{
+    prelude::DateTimeWithTimeZone,
+    ActiveValue::{NotSet, Set},
+};
 
 #[derive(Debug, Enum, Copy, Clone, Eq, PartialEq)]
 #[graphql(remote = "entity::entities::sea_orm_active_enums::LoginType")]
@@ -28,9 +31,15 @@ impl From<users::Model> for User {
 }
 
 #[derive(Debug, SimpleObject)]
-pub struct Pet {
+pub(crate) struct DefaultPet {
     pub id: i32,
     pub name: String,
+}
+
+#[derive(Debug, SimpleObject)]
+pub struct Pet {
+    #[graphql(flatten)]
+    default: DefaultPet,
     pub feed_count: Option<i32>,
     pub sex: PetSexType,
     pub species: PetSpeciesType,
@@ -43,7 +52,6 @@ pub struct Pet {
 
 #[derive(Debug, InputObject)]
 pub(crate) struct NewPetInput {
-    pub user_id: i32,
     pub name: String,
     pub sex: PetSexType,
     pub species: PetSpeciesType,
@@ -55,10 +63,44 @@ pub(crate) struct NewPetInput {
     pub weight: Option<f32>,
 }
 
+#[derive(Debug, InputObject)]
+pub(crate) struct UpdatePetInput {
+    pub id: i32,
+    pub name: Option<String>,
+    pub feed_count: Option<i32>,
+    pub birthday: Option<NaiveDate>,
+    pub birthday_precision: Option<DateDurationType>,
+    pub weight: Option<f32>,
+}
+
+#[derive(Debug, SimpleObject)]
+pub(crate) struct DeleteObjectPayload {
+    pub id: Option<i32>,
+    pub success: bool,
+    pub message: String,
+}
+
+impl DeleteObjectPayload {
+    pub(crate) fn empty_response() -> Self {
+        Self {
+            id: None,
+            success: false,
+            message: "Not found object".into(),
+        }
+    }
+
+    pub(crate) fn success_response(id: i32) -> Self {
+        Self {
+            id: Some(id),
+            success: true,
+            message: format!("Delete succeed id - {:?}", id),
+        }
+    }
+}
+
 impl From<NewPetInput> for pets::ActiveModel {
     fn from(value: NewPetInput) -> Self {
         pets::ActiveModel {
-            user_id: Set(value.user_id),
             name: Set(value.name),
             sex: Set(value.sex.into()),
             species: Set(value.species.into()),
@@ -71,11 +113,30 @@ impl From<NewPetInput> for pets::ActiveModel {
     }
 }
 
+impl From<UpdatePetInput> for pets::ActiveModel {
+    fn from(value: UpdatePetInput) -> Self {
+        pets::ActiveModel {
+            id: Set(value.id),
+            name: value.name.map(Set).unwrap_or(NotSet),
+            feed_count: value.feed_count.map(|f| Set(Some(f))).unwrap_or(NotSet),
+            birthday: value.birthday.map(Set).unwrap_or(NotSet),
+            birthday_precision: value
+                .birthday_precision
+                .map(|p| Set(p.into()))
+                .unwrap_or(NotSet),
+            weight: value.weight.map(|w| Set(Some(w))).unwrap_or(NotSet),
+            ..Default::default()
+        }
+    }
+}
+
 impl From<pets::Model> for Pet {
     fn from(value: pets::Model) -> Self {
         Self {
-            id: value.id,
-            name: value.name,
+            default: DefaultPet {
+                id: value.id,
+                name: value.name,
+            },
             sex: PetSexType::from(value.sex),
             species: PetSpeciesType::from(value.species),
             feed_count: value.feed_count,
