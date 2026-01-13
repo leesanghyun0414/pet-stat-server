@@ -18,16 +18,15 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 
 RUN cargo install sea-orm-cli seaography-cli
+
 FROM base AS dep-build
 
 ARG BUILD_ROOT
-ARG MOLD_INSTALLER="scripts/install_mold.sh"
 ARG WORKDIR
 
 RUN apt-get update \
   && apt-get upgrade -y \
   && apt-get install -y --no-install-recommends \
-  mold \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
@@ -44,7 +43,7 @@ EXPOSE 8080
 
 COPY "${BUILD_ROOT}" .
 
-CMD ["mold", "-run", "cargo", "run"]
+CMD ["cargo", "run"]
 
 FROM base AS builder
 
@@ -52,20 +51,17 @@ ARG WORKDIR
 ARG BUILD_ROOT
 ARG PROJECT_NAME="pet-stats"
 
-COPY --link --from=dep-build /usr/local/bin/mold /usr/local/bin/mold
-COPY --link --from=dep-build /usr/local/libexec/mold /usr/local/libexec/mold
-COPY --link --from=dep-build /usr/local/lib/mold /usr/local/lib/mold
 
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
   --mount=type=bind,target="${WORKDIR}/Cargo.toml",source="${BUILD_ROOT}/Cargo.toml" \
   mkdir src \
   && echo "fn main() {}" > src/main.rs \
-  && mold -run cargo build --release
+  && cargo build --release
 
 COPY "${BUILD_ROOT}" .
 
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
-  mold -run cargo build --release
+  cargo build --release
 
 
 FROM gcr.io/distroless/cc-debian12:nonroot AS runtime
