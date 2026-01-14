@@ -4,8 +4,8 @@ use entity::entities::user_tokens::{self, Column as C, Entity as UserTokens, Mod
 use entity::entities::{oauth_accounts, users};
 use sea_orm::ActiveValue::Set;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, ConnectionTrait, DbConn, DbErr,
-    EntityTrait, IntoActiveModel, QueryFilter, QuerySelect,
+    ActiveModelTrait, ColumnTrait, ConnectionTrait, DbConn, DbErr, EntityTrait, IntoActiveModel,
+    QueryFilter, QuerySelect,
 };
 use tracing::{error, info, instrument, warn};
 
@@ -79,6 +79,7 @@ impl UserMutation {
         T: ConnectionTrait,
     {
         let Some(user_token) = UserTokens::find()
+            .filter(C::Revoked.eq(false))
             .filter(C::RefreshToken.eq(hash.as_slice()))
             .lock_exclusive()
             .one(txn)
